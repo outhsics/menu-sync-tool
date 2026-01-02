@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>导出菜单 - 使用完整 API 地址</title>
+</head>
+<body>
+  <h1>📦 菜单导出脚本</h1>
+  <p>请复制下面的代码到 <strong>http://localhost:8081</strong> 的控制台运行：</p>
+
+  <textarea style="width: 100%; height: 400px; font-family: monospace; font-size: 12px;" readonly>(async function() {
+  console.log('🎯 菜单导出工具');
+  console.log('='.repeat(70));
+  console.log('');
+
+  // API 地址配置
+  const API_BASE = 'https://dev-api.bangyangjia.com';
+  const API_URL = API_BASE + '/admin-api/system/menu/list';
+
+  console.log('📍 当前页面:', window.location.href);
+  console.log('🌐 API 地址:', API_URL);
+  console.log('');
+
+  try {
+    console.log('📡 正在请求菜单数据...');
+
+    const response = await fetch(API_URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('   HTTP 状态:', response.status);
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
+    const contentType = response.headers.get('content-type');
+    console.log('   Content-Type:', contentType);
+
+    if (!contentType.includes('application/json')) {
+      throw new Error('响应不是 JSON 格式');
+    }
+
+    const result = await response.json();
+
+    if (result.code !== 0) {
+      throw new Error('API 错误: ' + result.msg);
+    }
+
+    const menus = result.data;
+    console.log('   ✅ 成功获取', menus.length, '个菜单\\n');
+
+    // 构建菜单树
+    function buildTree(parentId = 0) {
+      return menus
+        .filter(m => m.parentId === parentId)
+        .sort((a, b) => a.sort - b.sort)
+        .map(m => ({ ...m, children: buildTree(m.id) }));
+    }
+
+    const tree = buildTree(0);
+    const crm = tree.find(m => m.name === 'CRM 系统');
+
+    if (!crm) {
+      console.error('❌ 未找到 CRM 系统菜单');
+      return;
+    }
+
+    console.log('✅ 找到 CRM 系统\\n');
+
+    // 提取三个工作台的子菜单
+    const workbenches = ['一转工作台', '二转工作台', '三转工作台'];
+    const exportData = {};
+
+    workbenches.forEach(name => {
+      const wb = crm.children.find(c => c.name === name);
+      if (wb) {
+        exportData[name] = {
+          subMenus: (wb.children || []).map(child => ({
+            name: child.name,
+            path: child.path,
+            component: child.component,
+            permission: child.permission,
+            type: child.type,
+            sort: child.sort,
+            icon: child.icon,
+            status: child.status,
+            visible: child.visible,
+            keepAlive: child.keepAlive,
+            alwaysShow: child.alwaysShow
+          }))
+        };
+        console.log('📋 【' + name + '】');
+        console.log('   子菜单:', exportData[name].subMenus.map(m => m.name).join(', '));
+      }
+    });
+
+    console.log('');
+    console.log('='.repeat(70));
+    console.log('🎉 导出成功！');
+    console.log('='.repeat(70));
+    console.log('');
+    console.log('📋 请复制下面的完整数据（包含 const MENU_DATA = ）：');
+    console.log('');
+    console.log('const MENU_DATA = ' + JSON.stringify(exportData, null, 2));
+    console.log('');
+    console.log('='.repeat(70));
+    console.log('');
+    console.log('💡 使用方法：');
+    console.log('   1. 选中上面 const MENU_DATA = {...} 的全部内容');
+    console.log('   2. 按 Ctrl+C (Mac用 Command+C) 复制');
+    console.log('   3. 粘贴到工具页面的文本框中');
+    console.log('   4. 点击"解析数据并预览"按钮\\n');
+
+  } catch (error) {
+    console.error('');
+    console.error('❌ 发生错误:', error.message);
+    console.error('');
+    console.error('💡 可能的原因：');
+    console.error('   1. 网络连接问题');
+    console.error('   2. API 服务未启动');
+    console.error('   3. 跨域问题（CORS）');
+    console.error('   4. 未登录导致认证失败\\n');
+
+    console.error('🔍 调试信息：');
+    console.error('   当前页面:', window.location.href);
+    console.error('   API 地址:', API_URL);
+  }
+
+})();
+</textarea>
+</body>
+</html>

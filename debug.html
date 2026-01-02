@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 测试工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+    .success { color: #4caf50; font-weight: bold; }
+    .error { color: #f44336; font-weight: bold; }
+    .info { color: #2196f3; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔍 API 连接测试工具</h1>
+    <p>用于测试本地环境 API 是否可以正常访问</p>
+
+    <div style="margin: 20px 0;">
+      <button onclick="testConnection()">🔗 测试 API 连接</button>
+      <button onclick="showCookies()">🍪 查看 Cookie</button>
+      <button onclick="testWithCredentials()">🔐 测试带凭证请求</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function log(message, type = 'info') {
+      const result = document.getElementById('result');
+      const className = type;
+      result.innerHTML += `<p class="${className}">${message}</p>`;
+    }
+
+    function clearLog() {
+      document.getElementById('result').innerHTML = '';
+    }
+
+    async function testConnection() {
+      clearLog();
+      log('🔍 开始测试 API 连接...', 'info');
+
+      try {
+        // 测试简单的 API 请求
+        const response = await fetch('http://localhost:8081/admin-api/system/menu/simple-list', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'  // 包含 cookie
+        });
+
+        log(`HTTP 状态码: ${response.status}`, 'info');
+        log(`Content-Type: ${response.headers.get('content-type')}`, 'info');
+
+        if (!response.ok) {
+          log('❌ HTTP 请求失败', 'error');
+          const text = await response.text();
+          log(`响应内容（前200字符）: ${text.substring(0, 200)}...`, 'error');
+          return;
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          log('✅ 成功获取 JSON 数据！', 'success');
+          log(`返回数据: <pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+        } else {
+          log('❌ 响应不是 JSON 格式', 'error');
+          const text = await response.text();
+          log(`响应内容: ${text}`, 'error');
+        }
+
+      } catch (error) {
+        log(`❌ 请求出错: ${error.message}`, 'error');
+        log(`请检查:`, 'info');
+        log(`1. 本地服务是否正在运行 (http://localhost:8081)`, 'info');
+        log(`2. 是否已经登录系统`, 'info');
+        log(`3. 浏览器控制台是否有 CORS 错误`, 'info');
+      }
+    }
+
+    function showCookies() {
+      clearLog();
+      log('🍪 当前页面的 Cookie:', 'info');
+      log(`<pre>${document.cookie}</pre>`, 'info');
+
+      if (!document.cookie) {
+        log('⚠️ 没有 Cookie，这可能说明:', 'error');
+        log('1. 你还没有登录系统', 'error');
+        log('2. 需要在本地环境页面运行此脚本', 'error');
+      } else {
+        log('✅ 找到 Cookie', 'success');
+      }
+    }
+
+    async function testWithCredentials() {
+      clearLog();
+      log('🔐 测试带凭证的请求...', 'info');
+
+      try {
+        // 尝试获取当前页面的 URL
+        const currentUrl = window.location.href;
+        log(`当前页面: ${currentUrl}`, 'info');
+
+        // 如果在本地环境，直接测试
+        if (currentUrl.includes('localhost:8081')) {
+          log('✅ 你在本地环境页面', 'success');
+          await testConnection();
+        } else {
+          log('⚠️ 你不在本地环境页面', 'error');
+          log('请在 http://localhost:8081 打开此页面', 'error');
+        }
+
+      } catch (error) {
+        log(`❌ 错误: ${error.message}`, 'error');
+      }
+    }
+
+    // 页面加载时显示提示
+    window.onload = function() {
+      log('📋 使用说明:', 'info');
+      log('1. 确保本地服务正在运行', 'info');
+      log('2. 打开 http://localhost:8081 登录系统', 'info');
+      log('3. 在本地页面按 F12 打开控制台', 'info');
+      log('4. 粘贴下面的代码到控制台运行:', 'info');
+      log(`<pre>fetch('/admin-api/system/menu/simple-list')
+  .then(r => r.json())
+  .then(d => console.log('成功:', d))
+  .catch(e => console.error('失败:', e));</pre>`, 'info');
+    };
+  </script>
+</body>
+</html>

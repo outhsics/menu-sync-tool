@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "菜单同步工具",
+  "version": "1.0.0",
+  "description": "将本地环境的菜单同步到生产环境",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "菜单同步工具"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

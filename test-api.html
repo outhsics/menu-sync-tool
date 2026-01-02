@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试脚本</title>
+</head>
+<body>
+  <h1>📝 请复制下面的代码到本地环境 (http://localhost:8081) 的控制台运行</h1>
+
+  <textarea style="width: 100%; height: 300px; font-family: monospace; font-size: 14px;" readonly>(async function() {
+  console.log('🔍 开始诊断 API 问题...\n');
+
+  // 1. 检查当前页面
+  console.log('1️⃣ 当前页面信息:');
+  console.log('   URL:', window.location.href);
+  console.log('   Hostname:', window.location.hostname);
+
+  if (!window.location.href.includes('localhost:8081')) {
+    console.log('\n❌ 错误：你不在本地环境页面！');
+    console.log('   请打开 http://localhost:8081 并登录后再运行此脚本\n');
+    return;
+  }
+
+  console.log('\n2️⃣ 检查 Cookie:');
+  console.log('   Cookie:', document.cookie || '(无)');
+
+  if (!document.cookie) {
+    console.log('\n⚠️  没有 Cookie，请确保已经登录系统\n');
+  } else {
+    console.log('   ✅ 有 Cookie\n');
+  }
+
+  console.log('3️⃣ 测试 API 请求...');
+
+  try {
+    // 测试不同的 API 端点
+    const endpoints = [
+      '/admin-api/system/menu/simple-list',
+      '/admin-api/system/menu/list'
+    ];
+
+    for (const endpoint of endpoints) {
+      console.log(`\n   测试端点: ${endpoint}`);
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log(`   状态码: ${response.status} ${response.statusText}`);
+      console.log(`   Content-Type: ${response.headers.get('content-type')}`);
+
+      const contentType = response.headers.get('content-type');
+
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log(`   ✅ 成功！返回数据类型: ${typeof data}`);
+        console.log(`   数据结构:`, Object.keys(data));
+
+        if (data.data) {
+          console.log(`   菜单数量: ${data.data.length || 0} 个`);
+        }
+
+        // 找到了！输出成功信息
+        console.log('\n✅✅✅ API 测试成功！');
+        console.log(`\n📋 请使用这个端点: ${endpoint}`);
+        console.log('   现在可以运行导出脚本了\n');
+        return;
+      } else {
+        const text = await response.text();
+        console.log(`   ❌ 返回的不是 JSON`);
+        console.log(`   内容预览: ${text.substring(0, 100)}...`);
+
+        if (text.includes('<!doctype') || text.includes('<!DOCTYPE')) {
+          console.log(`   ⚠️  返回的是 HTML 页面`);
+          if (text.includes('login') || text.includes('登录')) {
+            console.log(`   ❌ 这是登录页面，请先登录系统！`);
+          }
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('\n❌ 请求失败:', error.message);
+    console.log('\n💡 可能的原因:');
+    console.log('   1. 本地前端服务未启动');
+    console.log('   2. 后端 API 服务未启动');
+    console.log('   3. 网络连接问题');
+    console.log('   4. CORS 跨域问题\n');
+  }
+
+  console.log('\n' + '='.repeat(70));
+  console.log('📋 如果测试成功，请运行下面的导出脚本:\n');
+  console.log(`
+async function exportMenus() {
+  const response = await fetch('/admin-api/system/menu/list');
+  const result = await response.json();
+  const menus = result.data;
+
+  // 构建菜单树
+  function buildTree(parentId = 0) {
+    return menus
+      .filter(m => m.parentId === parentId)
+      .sort((a, b) => a.sort - b.sort)
+      .map(m => ({ ...m, children: buildTree(m.id) }));
+  }
+
+  const tree = buildTree(0);
+  const crm = tree.find(m => m.name === 'CRM 系统');
+
+  console.log('CRM 系统:', crm);
+
+  if (crm && crm.children) {
+    const workbenches = ['一转工作台', '二转工作台', '三转工作台'];
+    const exportData = {};
+
+    workbenches.forEach(name => {
+      const wb = crm.children.find(c => c.name === name);
+      if (wb) {
+        exportData[name] = {
+          subMenus: (wb.children || []).map(child => ({
+            name: child.name,
+            path: child.path,
+            component: child.component,
+            permission: child.permission,
+            type: child.type,
+            sort: child.sort,
+            icon: child.icon,
+            status: child.status,
+            visible: child.visible,
+            keepAlive: child.keepAlive,
+            alwaysShow: child.alwaysShow
+          }))
+        };
+        console.log(name + ':', exportData[name].subMenus.map(m => m.name));
+      }
+    });
+
+    console.log('\n复制下面的数据:');
+    console.log('const MENU_DATA = ' + JSON.stringify(exportData, null, 2));
+  }
+}
+
+exportMenus();
+  `);
+
+})();
+</textarea>
+</body>
+</html>
