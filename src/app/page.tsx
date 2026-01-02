@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { MenuTreeTable } from '@/components/MenuTreeTable';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { downloadBackup } from "@/lib/backup";
 
 interface LogEntry {
   id: string;
@@ -68,6 +69,13 @@ export default function Home() {
     addLog('🚀 启动同步流水线 (Next.js Server Actions)...', 'info');
 
     try {
+        // 📦 Step 1: 备份目标环境数据 (JSON 快照 下载到本地)
+        addLog('📦 正在备份目标环境数据...', 'info');
+        const targetMenusForBackup = await fetchMenusAction(target);
+        downloadBackup(targetMenusForBackup, target.name || 'target');
+        addLog(`✅ 备份完成! 已下载 ${targetMenusForBackup.length} 项菜单数据到本地`, 'success');
+
+        // 🔀 Step 2: 正式同步流程
         const selectedRoot = sourceTree.find(m => m.name === selectedSystem);
         if (!selectedRoot) throw new Error('未找到选中的系统');
 
