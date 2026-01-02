@@ -138,9 +138,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-500 font-mono text-[10px]">BUN 1.3.5</Badge>
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-900" onClick={() => window.open('https://github.com', '_blank')}>
-                <Github className="w-5 h-5" />
-            </Button>
           </div>
         </div>
       </nav>
