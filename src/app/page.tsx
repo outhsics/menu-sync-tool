@@ -79,7 +79,27 @@ export default function Home() {
             for (const sMenu of sourceMenus) {
                 if (!selectedMenus.has(sMenu.id)) continue;
 
-                const tMenu = targetMenus.find(m => m.name === sMenu.name);
+                // 🔒 核心匹配逻辑升级 (Match Logic v2)
+                // 优先级: 1. Permission (唯一标识) -> 2. Path (路由路径) -> 3. Name (显示名称)
+                let tMenu = undefined;
+                
+                // 1. 尝试通过权限标识匹配 (最强锚点)
+                if (sMenu.permission) {
+                    tMenu = targetMenus.find(m => m.permission === sMenu.permission);
+                }
+                
+                // 2. 如果没有权限标识(如目录) 或 没匹配到，尝试通过路由路径匹配
+                if (!tMenu && sMenu.path) {
+                    // 仅当路径不是简单通用路径时才通过路径匹配 (防止都叫 /index 或 /)
+                    if (sMenu.path !== '/' && !sMenu.path.startsWith('http')) {
+                         tMenu = targetMenus.find(m => m.path === sMenu.path);
+                    }
+                }
+
+                // 3. 最后兜底：通过名称匹配 (仅在同层级比较)
+                if (!tMenu) {
+                    tMenu = targetMenus.find(m => m.name === sMenu.name);
+                }
                 let currentId = tMenu?.id;
 
                 if (!tMenu) {
