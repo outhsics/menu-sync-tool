@@ -23,6 +23,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { MenuTreeTable } from '@/components/MenuTreeTable';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface LogEntry {
   id: string;
   message: string;
@@ -172,18 +174,27 @@ export default function Home() {
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="relative col-span-2">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <select 
-                                className="w-full h-10 pl-10 pr-4 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:ring-2 ring-blue-500/20 focus:border-blue-500 transition-all appearance-none"
-                                value={selectedSystem}
-                                onChange={(e) => {
-                                    setSelectedSystem(e.target.value);
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10 pointer-events-none" />
+                            <Select 
+                                value={selectedSystem} 
+                                onValueChange={(val) => {
+                                    setSelectedSystem(val);
                                     setSelectedMenus(new Set());
                                 }}
                             >
-                                <option value="">选择系统平台...</option>
-                                {sourceTree.map(m => <option key={m.id} value={m.name} className="bg-white">{m.name}</option>)}
-                            </select>
+                                <SelectTrigger className="w-full h-10 pl-9 bg-white border-gray-200 hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 data-[state=open]:border-blue-500 transition-all">
+                                    <SelectValue placeholder="选择系统平台..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sourceTree.length === 0 ? (
+                                        <div className="p-2 text-sm text-gray-400 text-center">暂无数据，请先连接环境</div>
+                                    ) : (
+                                        sourceTree.map(m => (
+                                            <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <Button 
                             className="bg-blue-600 hover:bg-blue-500 shadow-sm h-10"
