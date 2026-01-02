@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface EnvConfig {
-  name: string;
-  apiBase: string;
-  token: string;
-  tenantId: string;
-  isConnected: boolean;
-}
+import { EnvConfig } from '@/types';
 
 interface AppState {
   source: EnvConfig;
@@ -21,7 +14,7 @@ interface AppState {
 
 const defaultEnv: EnvConfig = {
   name: '',
-  apiBase: '', // Default empty
+  apiBase: '',
   token: '',
   tenantId: '1',
   isConnected: false,
@@ -60,7 +53,7 @@ export const useAppStore = create<AppState>()(
         }),
     }),
     {
-      name: 'menu-sync-storage',
+      name: 'menu-sync-v3-storage',
     }
   )
 );

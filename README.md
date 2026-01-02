@@ -1,106 +1,36 @@
-# 🎯 菜单同步工具
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-> 将本地环境的菜单一键同步到生产环境
+## Getting Started
 
-## 📦 项目说明
-
-这是一个独立的菜单同步工具，用于在本地开发环境和生产环境之间同步系统菜单配置。
-
-### 功能特点
-
-- ✅ 自动导出本地环境菜单数据
-- ✅ 智能对比生产环境差异
-- ✅ 一键同步缺失的菜单
-- ✅ 完整的操作指引
-- ✅ 美观的可视化界面
-
-### 适用场景
-
-当本地开发环境新增了菜单配置，需要同步到生产环境时使用。
-
-## 🚀 快速开始
-
-### 方式一：直接打开（推荐）
-
-1. 双击打开 `index.html` 文件
-2. 按照页面上的步骤指引操作即可
-
-### 方式二：通过本地服务器
+First, run the development server:
 
 ```bash
-# 进入项目目录
-cd /Users/terre/Documents/menu-sync-tool
-
-# 启动简单的 HTTP 服务器
-python3 -m http.server 8080
-
-# 或使用 Node.js
-npx serve -p 8080
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-然后在浏览器访问：http://localhost:8080
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 📖 使用步骤
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### 第一步：从本地环境导出菜单
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-1. 打开本地环境：http://localhost:8081
-2. 按 **F12** 打开浏览器控制台
-3. 点击 **"Console"** 标签
-4. 在工具页面点击 **"生成导出代码"**
-5. 复制生成的代码到本地环境控制台运行
-6. 复制输出的数据回到工具页面
+## Learn More
 
-### 第二步：同步到生产环境
+To learn more about Next.js, take a look at the following resources:
 
-1. 打开生产环境：https://dev-admin.bangyangjia.com
-2. 按 **F12** 打开浏览器控制台
-3. 点击 **"Console"** 标签
-4. 在工具页面点击 **"生成同步代码"**
-5. 复制生成的代码到生产环境控制台运行
-6. 等待同步完成
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### 第三步：刷新菜单缓存
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-1. 进入系统：**【系统设置】→【菜单管理】**
-2. 点击 **【刷新菜单缓存】** 按钮
-3. 刷新页面（F5）查看效果
+## Deploy on Vercel
 
-## 🔧 技术栈
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-- 纯 HTML + CSS + JavaScript
-- 无需任何依赖或框架
-- 可完全离线使用
-
-## 📁 项目结构
-
-```
-menu-sync-tool/
-├── index.html          # 主页面文件
-├── README.md           # 项目说明
-└── .gitignore         # Git 忽略文件
-```
-
-## ⚠️ 注意事项
-
-1. 确保在正确的环境运行对应的代码
-2. 本地环境导出的数据要完整复制
-3. 同步后必须刷新菜单缓存才能生效
-4. 可以安全地重复运行，不会重复添加
-
-## 📝 更新日志
-
-### v1.0.0 (2025-01-02)
-
-- ✨ 首次发布
-- 🎉 支持一转工作台、二转工作台、三转工作台的菜单同步
-- 📋 完整的操作指引和常见问题解答
-- 🎨 美观的可视化界面
-
-## 👨‍💻 维护者
-
-开发团队
-
-## 📄 许可证
-
-内部使用工具
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

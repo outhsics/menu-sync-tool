@@ -1,50 +1,46 @@
+"use client";
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Loader2, Link2 } from 'lucide-react';
-import { EnvConfig } from '@/store/useAppStore';
-import * as api from '@/lib/api';
+import { Check, X, Loader2, Link2, Trash2 } from 'lucide-react';
+import { EnvConfig } from '@/types';
+import { fetchMenusAction } from '@/actions/menu';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface EnvironmentCardProps {
   title: string;
   config: EnvConfig;
   onUpdate: (config: Partial<EnvConfig>) => void;
-  onConnected: (status: boolean) => void;
+  onConnected: (isConnected: boolean) => void;
 }
 
 export function EnvironmentCard({ title, config, onUpdate, onConnected }: EnvironmentCardProps) {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleTestConnection = async () => {
     if (!config.apiBase || !config.token) {
-      setStatus('error');
-      setMessage('请填写 API 地址和 Token');
+      setError('请填写完整的 API 地址和 Token');
       return;
     }
 
     setLoading(true);
-    setStatus('idle');
-    setMessage('');
+    setError(null);
 
     try {
-      await api.fetchAllMenus({
+      await fetchMenusAction({
         apiBase: config.apiBase,
         token: config.token,
         tenantId: config.tenantId
       });
-      
-      setStatus('success');
-      setMessage('连接成功');
       onConnected(true);
-    } catch (error) {
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : '连接失败');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '连接失败');
       onConnected(false);
     } finally {
       setLoading(false);
@@ -52,68 +48,105 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
   };
 
   return (
-    <Card className={cn("border-l-4 transition-all", 
-      status === 'success' ? "border-l-green-500" : 
-      status === 'error' ? "border-l-red-500" : "border-l-transparent"
-    )}>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
-            {title}
-            {config.isConnected && <Badge variant="default" className="bg-green-600 hover:bg-green-700">已连接</Badge>}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => onUpdate({ apiBase: '', token: '', tenantId: '1', isConnected: false })}>
-            清除
-          </Button>
-        </div>
-        <CardDescription>配置 API 地址和认证 Token</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>API 地址</Label>
-          <Input 
-            placeholder="https://api.example.com" 
-            value={config.apiBase}
-            onChange={(e) => onUpdate({ apiBase: e.target.value, isConnected: false })}
-          />
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className={cn(
+        "relative overflow-hidden border border-[var(--border)] bg-white shadow-sm hover:shadow-md transition-all",
+        config.isConnected && "border-blue-500 ring-2 ring-blue-100"
+      )}>
+        {config.isConnected && (
+            <div className="absolute top-0 right-0 p-2">
+                <Badge className="bg-green-50 text-green-600 border-green-200">已连接</Badge>
+            </div>
+        )}
         
-        <div className="grid grid-cols-4 gap-4">
-          <div className="col-span-1 space-y-2">
-            <Label>租户 ID</Label>
-            <Input 
-              value={config.tenantId}
-              onChange={(e) => onUpdate({ tenantId: e.target.value, isConnected: false })}
-            />
-          </div>
-          <div className="col-span-3 space-y-2">
-            <Label>Access Token</Label>
-            <Input 
-              type="password"
-              placeholder="eyJhbG..." 
-              value={config.token}
-              onChange={(e) => onUpdate({ token: e.target.value, isConnected: false })}
-              className="font-mono text-sm"
-            />
-          </div>
-        </div>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <Link2 className={cn("w-5 h-5", config.isConnected ? "text-blue-500" : "text-gray-400")} />
+            {title}
+          </CardTitle>
+          <CardDescription>配置同步环境的 API 与凭证</CardDescription>
+        </CardHeader>
 
-        <div className="flex items-center justify-between pt-2">
-          <div className="text-sm">
-            {status === 'error' && <span className="text-red-500 flex items-center gap-1"><X className="w-4 h-4" /> {message}</span>}
-            {status === 'success' && <span className="text-green-600 flex items-center gap-1"><Check className="w-4 h-4" /> {message}</span>}
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">API 基础路径</Label>
+            <Input 
+              placeholder="https://api-byjedu.com" 
+              value={config.apiBase}
+              onChange={(e) => onUpdate({ apiBase: e.target.value, isConnected: false })}
+              className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+              list={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}
+            />
+            <datalist id={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}>
+              <option value="https://api-byjedu.com" />
+              <option value="https://dev-api.bangyangjia.com" />
+              <option value="http://localhost:48080" />
+            </datalist>
+
           </div>
           
-          <Button 
-            onClick={handleTestConnection} 
-            disabled={loading || !config.apiBase || !config.token}
-            className="w-32"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
-            {loading ? '连接中' : '测试连接'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="col-span-1 space-y-2">
+                <Label className="text-sm font-medium">租户 ID</Label>
+                <Input 
+                    value={config.tenantId}
+                    onChange={(e) => onUpdate({ tenantId: e.target.value, isConnected: false })}
+                    className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+            </div>
+            <div className="col-span-3 space-y-2">
+                <Label className="text-sm font-medium">Access Token</Label>
+                <Input 
+                    type="text"
+                    placeholder="粘贴 Access Token" 
+                    value={config.token}
+                    onChange={(e) => onUpdate({ token: e.target.value, isConnected: false })}
+                    className="font-mono text-sm bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-xs text-red-500 flex items-center gap-1.5 p-2 rounded bg-red-50 border border-red-100"
+              >
+                <X className="w-3.5 h-3.5" /> {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex gap-2 pt-2">
+            <Button 
+              onClick={handleTestConnection} 
+              disabled={loading || !config.apiBase || !config.token}
+              className={cn(
+                "flex-1 transition-all",
+                config.isConnected ? "bg-green-500 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-500"
+              )}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {loading ? '连接中...' : config.isConnected ? '刷新连接' : '测试连接'}
+            </Button>
+            
+            <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => onUpdate({ apiBase: '', token: '', tenantId: '1', isConnected: false })}
+                className="border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+            >
+                <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
