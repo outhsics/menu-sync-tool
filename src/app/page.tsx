@@ -77,44 +77,44 @@ export default function Home() {
             let updated = 0;
 
             for (const sMenu of sourceMenus) {
-                if (!selectedMenus.has(sMenu.id)) continue;
-
+                const isSelected = selectedMenus.has(sMenu.id);
+                
                 // 🔒 核心匹配逻辑升级 (Match Logic v2)
-                // 优先级: 1. Permission (唯一标识) -> 2. Path (路由路径) -> 3. Name (显示名称)
                 let tMenu = undefined;
-                
-                // 1. 尝试通过权限标识匹配 (最强锚点)
-                if (sMenu.permission) {
-                    tMenu = targetMenus.find(m => m.permission === sMenu.permission);
-                }
-                
-                // 2. 如果没有权限标识(如目录) 或 没匹配到，尝试通过路由路径匹配
+                if (sMenu.permission) tMenu = targetMenus.find(m => m.permission === sMenu.permission);
                 if (!tMenu && sMenu.path) {
-                    // 仅当路径不是简单通用路径时才通过路径匹配 (防止都叫 /index 或 /)
                     if (sMenu.path !== '/' && !sMenu.path.startsWith('http')) {
                          tMenu = targetMenus.find(m => m.path === sMenu.path);
                     }
                 }
+                if (!tMenu) tMenu = targetMenus.find(m => m.name === sMenu.name);
 
-                // 3. 最后兜底：通过名称匹配 (仅在同层级比较)
-                if (!tMenu) {
-                    tMenu = targetMenus.find(m => m.name === sMenu.name);
-                }
                 let currentId = tMenu?.id;
+                let shouldRecurse = false;
 
-                if (!tMenu) {
-                    addLog(`[CREATE] ${sMenu.name}`, 'info');
-                    const { id, parentId, children, createTime, ...data } = sMenu;
-                    currentId = await createMenuAction({ ...data, parentId: pId }, target);
-                    added++;
-                } else if (!isMenuEqual(sMenu, tMenu)) {
-                    addLog(`[UPDATE] ${sMenu.name}`, 'warn');
-                    const { id, parentId, children, createTime, ...data } = sMenu;
-                    await updateMenuAction({ ...data, id: tMenu.id, parentId: pId }, target);
-                    updated++;
+                if (isSelected) {
+                    // Case 1: 用户勾选了此菜单 -> 执行同步 (新增/更新)
+                    if (!tMenu) {
+                        addLog(`[CREATE] ${sMenu.name}`, 'info');
+                        const { id, parentId, children, createTime, ...data } = sMenu;
+                        currentId = await createMenuAction({ ...data, parentId: pId }, target);
+                        added++;
+                    } else if (!isMenuEqual(sMenu, tMenu)) {
+                        addLog(`[UPDATE] ${sMenu.name}`, 'warn');
+                        const { id, parentId, children, createTime, ...data } = sMenu;
+                        await updateMenuAction({ ...data, id: tMenu.id, parentId: pId }, target);
+                        updated++;
+                    }
+                    shouldRecurse = true; 
+                } else {
+                     // Case 2: 用户没勾选 -> 只有当目标端存在此节点时，才允许同步其子节点
+                     if (currentId) {
+                         shouldRecurse = true;
+                     } 
+                     // else: 没勾选且目标端不存在 -> 无法挂载子节点 -> 跳过
                 }
 
-                if (sMenu.children && sMenu.children.length > 0 && currentId) {
+                if (shouldRecurse && sMenu.children && sMenu.children.length > 0 && currentId) {
                     const result = await syncRecursive(sMenu.children, tMenu?.children || [], currentId);
                     added += result.added;
                     updated += result.updated;
@@ -123,7 +123,59 @@ export default function Home() {
             return { added, updated };
         };
 
-        const result = await syncRecursive([selectedRoot], targetTree, 0);
+        // Fix: Don't wrap selectedRoot in array, use its children directly if we are syncing a subtree, 
+        // OR better: handle the recursive logic to start FROM the selected items.
+        
+        // 修正逻辑：我们应该遍历 sourceTree 的顶层，找到 selectedRoot
+        // 但是 syncRecursive 的 entry 需要调整。
+        // 如果 selectedRoot 本身被选中了，我们得从它开始同步。
+        
+        // 查找目标环境对应的 Root 节点 (通常是 'CRM系统' 这种顶级目录)
+        // 注意：顶级节点通常 parentId = 0
+        
+        let targetRootId = 0;
+        const targetRoot = targetTree.find(m => m.name === selectedRoot.name); // 顶层只按名字/权限粗略匹配
+        
+        // Root level stats
+        let rootAdded = 0;
+        let rootUpdated = 0;
+
+        if (targetRoot) {
+             targetRootId = targetRoot.id;
+             // 如果顶层节点本身也被勾选了，检查是否需要更新
+             if (selectedMenus.has(selectedRoot.id) && !isMenuEqual(selectedRoot, targetRoot)) {
+                 addLog(`[UPDATE ROOT] ${selectedRoot.name}`, 'warn');
+                 const { id, parentId, children, createTime, ...data } = selectedRoot;
+                 await updateMenuAction({ ...data, id: targetRoot.id, parentId: 0 }, target);
+                 rootUpdated++; // Count root update
+             }
+        } else if (selectedMenus.has(selectedRoot.id)) {
+             // 目标不存在顶层节点，且用户勾选了顶层，则创建
+             addLog(`[CREATE ROOT] ${selectedRoot.name}`, 'info');
+             const { id, parentId, children, createTime, ...data } = selectedRoot;
+             targetRootId = await createMenuAction({ ...data, parentId: 0 }, target);
+             rootAdded++;
+        } else {
+            // 目标不存在顶层，且用户没勾选顶层（这很奇怪，通常应该勾选），
+            // 但如果只想同步子菜单，而父菜单不存在，是无法挂载的。
+            // 这种情况下，我们假设用户希望同步到根目录下，或者报错提示。
+            // 为了安全，如果父节点必选但没选，我们跳过或报错。
+            // 现行逻辑：尝试在 target 找同名节点作为 parent。找不到就无法继续。
+             if (!targetRoot) {
+                 // 如果选了子节点但没选父节点，且目标不存在父节点，这会导致子节点无法挂载
+                 // 为简化逻辑，我们强制要求：如果要同步，必须保证父节点存在（要么已存在，要么本次勾选同步）
+                 throw new Error(`目标环境缺少顶级节点 "${selectedRoot.name}"。请先勾选该节点以创建它，或确保它已存在于目标环境！`);
+             }
+             targetRootId = targetRoot.id; // TS should be happy now as we handled !targetRoot
+        }
+
+        // 开始递归同步子节点
+        // Fix: 即使父节点没被勾选，也需要进入递归，去检查有没有勾选的子节点 (的前提是父节点在目标端已存在)
+        const result = await syncRecursive(selectedRoot.children || [], targetRoot?.children || [], targetRootId);
+        
+        // Add root stats
+        result.added += rootAdded;
+        result.updated += rootUpdated;
         addLog(`✅ 同步圆满完成! 新增: ${result.added}, 更新: ${result.updated}`, 'success');
         await loadData('target');
     } catch (error) {
