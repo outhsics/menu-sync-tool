@@ -104,6 +104,8 @@ export default function Home() {
                         const { id, parentId, children, createTime, ...data } = sMenu;
                         await updateMenuAction({ ...data, id: tMenu.id, parentId: pId }, target);
                         updated++;
+                    } else {
+                        addLog(`[SKIP] ${sMenu.name} (内容一致)`, 'info');
                     }
                     shouldRecurse = true; 
                 } else {
