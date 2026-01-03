@@ -172,7 +172,6 @@ function App() {
         </div>
         <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setLogs([])}>清空日志</Button>
-            <Button variant="default" size="sm" onClick={() => window.open('https://github.com/your-repo', '_blank')}>Help</Button>
         </div>
       </header>
 

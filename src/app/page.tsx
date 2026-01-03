@@ -6,26 +6,24 @@ import { EnvironmentCard } from '@/components/EnvironmentCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
 import { 
-  ArrowRightLeft, 
   RefreshCw, 
   Terminal, 
   ListTree, 
   Zap,
-  Github,
-  Search
+  Search,
+  ArrowRightLeft
 } from 'lucide-react';
-import { Menu } from '@/types';
+import { DiffNode } from '@/types';
 import { fetchMenusAction, createMenuAction, updateMenuAction } from '@/actions/menu';
-import { buildMenuTree, isMenuEqual } from '@/lib/menu-utils';
+import { buildMenuTree } from '@/lib/menu-utils';
+import { buildDiffTree, countDiffStats } from '@/lib/diff-engine';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { MenuTreeTable } from '@/components/MenuTreeTable';
+import { MenuDiffTable } from '@/components/MenuDiffTable';
+import { LoginModal } from '@/components/LoginModal';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { downloadBackup } from "@/lib/backup";
-
+// 日志条目接口
 interface LogEntry {
   id: string;
   message: string;
@@ -37,159 +35,186 @@ export default function Home() {
   const { source, target, setSource, setTarget, setSourceConnected, setTargetConnected } = useAppStore();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   
-  // Data State
-  const [sourceTree, setSourceTree] = useState<Menu[]>([]);
-  const [targetTree, setTargetTree] = useState<Menu[]>([]);
+  // 数据状态
+  const [diffTree, setDiffTree] = useState<DiffNode[]>([]);
   const [selectedSystem, setSelectedSystem] = useState<string>('');
   const [selectedMenus, setSelectedMenus] = useState<Set<number>>(new Set());
+  const [stats, setStats] = useState({ added: 0, updated: 0, same: 0 });
 
+  // 添加日志函数
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
     setLogs(prev => [{ id: Math.random().toString(), message, type, timestamp: new Date() }, ...prev].slice(0, 100));
   };
 
-  const loadData = async (env: 'source' | 'target') => {
-    const config = env === 'source' ? source : target;
+  // 分析差异逻辑
+  const handleAnalyze = async () => {
+    if (!source.isConnected || !target.isConnected) {
+        addLog('请先连接两个环境', 'warn');
+        return;
+    }
+    
+    setAnalyzing(true);
+    setDiffTree([]);
+    setSelectedSystem('');
+    setStats({ added: 0, updated: 0, same: 0 });
+    
     try {
-      addLog(`正在从 ${config.name} 获取菜单数据...`);
-      const menus = await fetchMenusAction(config);
-      const tree = buildMenuTree(menus);
-      if (env === 'source') setSourceTree(tree);
-      else setTargetTree(tree);
-      addLog(`${config.name} 数据获取成功: ${menus.length} 项`, 'success');
+        if (source.apiBase === target.apiBase && source.tenantId === target.tenantId) {
+            addLog('⚠️ 警告: 来源环境与目标环境配置完全一致！请确认您是否连接了正确的环境。', 'warn');
+        }
+
+        addLog('📥 正在并行获取双端数据...', 'info');
+        
+        const [sourceMenus, targetMenus] = await Promise.all([
+            fetchMenusAction(source),
+            fetchMenusAction(target)
+        ]);
+
+        addLog(`📊 数据获取成功: 来源(${sourceMenus.length}) / 目标(${targetMenus.length})`, 'success');
+        addLog('🔄 正在计算差异树...', 'info');
+
+        // 1. 构建标准树
+        const sTree = buildMenuTree(sourceMenus);
+        const tTree = buildMenuTree(targetMenus);
+
+        // 2. 构建差异树 (根层级)
+        const diff = buildDiffTree(sTree, tTree);
+        
+        setDiffTree(diff);
+        
+        // 3. 统计差异
+        const counts = countDiffStats(diff);
+        setStats(counts);
+
+        if (counts.added === 0 && counts.updated === 0) {
+            addLog('✅ 两个环境完全一致，无需同步', 'success');
+        } else {
+            addLog(`⚠️ 发现差异: ${counts.added} 个新增, ${counts.updated} 个变更`, 'warn');
+        }
+
     } catch (error) {
-      addLog(`获取 ${config.name} 数据失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
+        addLog(`❌ 分析失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
+    } finally {
+        setAnalyzing(false);
     }
   };
 
-  // Sync Logic
+  // 同步执行逻辑
   const handleSync = async () => {
-    if (!source.isConnected || !target.isConnected) return;
+    if (!source.isConnected || !target.isConnected || diffTree.length === 0) return;
     setSyncing(true);
-    addLog('🚀 启动同步流水线 (Next.js Server Actions)...', 'info');
+    addLog('🚀 启动增量同步...', 'info');
 
     try {
-        // 📦 Step 1: 备份目标环境数据 (JSON 快照 下载到本地)
-        addLog('📦 正在备份目标环境数据...', 'info');
-        const targetMenusForBackup = await fetchMenusAction(target);
-        downloadBackup(targetMenusForBackup, target.name || 'target');
-        addLog(`✅ 备份完成! 已下载 ${targetMenusForBackup.length} 项菜单数据到本地`, 'success');
+        const rootNode = diffTree.find(m => m.name === selectedSystem);
+        if (!rootNode) throw new Error('未找到选中的系统');
 
-        // 🔀 Step 2: 正式同步流程
-        const selectedRoot = sourceTree.find(m => m.name === selectedSystem);
-        if (!selectedRoot) throw new Error('未找到选中的系统');
+        let successCount = 0;
+        let skipCount = 0;
 
-        // Recursive Sync Engine
-        const syncRecursive = async (sourceMenus: Menu[], targetMenus: Menu[], pId: number) => {
-            let added = 0;
-            let updated = 0;
-
-            for (const sMenu of sourceMenus) {
-                const isSelected = selectedMenus.has(sMenu.id);
-                
-                // 🔒 核心匹配逻辑升级 (Match Logic v2)
-                let tMenu = undefined;
-                if (sMenu.permission) tMenu = targetMenus.find(m => m.permission === sMenu.permission);
-                if (!tMenu && sMenu.path) {
-                    if (sMenu.path !== '/' && !sMenu.path.startsWith('http')) {
-                         tMenu = targetMenus.find(m => m.path === sMenu.path);
-                    }
-                }
-                if (!tMenu) tMenu = targetMenus.find(m => m.name === sMenu.name);
-
-                let currentId = tMenu?.id;
-                let shouldRecurse = false;
+        // 递归同步函数
+        const syncRecursive = async (nodes: DiffNode[], parentId: number) => {
+            for (const node of nodes) {
+                const isSelected = selectedMenus.has(node.id);
+                // 默认使用该节点已有的目标ID（如果存在）
+                let currentTargetId = node.targetId;
 
                 if (isSelected) {
-                    // Case 1: 用户勾选了此菜单 -> 执行同步 (新增/更新)
-                    if (!tMenu) {
-                        addLog(`[CREATE] ${sMenu.name}`, 'info');
-                        const { id, parentId, children, createTime, ...data } = sMenu;
-                        currentId = await createMenuAction({ ...data, parentId: pId }, target);
-                        added++;
-                    } else if (!isMenuEqual(sMenu, tMenu)) {
-                        addLog(`[UPDATE] ${sMenu.name}`, 'warn');
-                        const { id, parentId, children, createTime, ...data } = sMenu;
-                        await updateMenuAction({ ...data, id: tMenu.id, parentId: pId }, target);
-                        updated++;
+                    // 构造请求数据：使用白名单模式，严防 Source ID 混入
+                    const s = node.sourceMenu || node;
+                    
+                    const payload = {
+                        name: s.name,
+                        permission: s.permission,
+                        type: s.type,
+                        sort: s.sort,
+                        parentId: parentId, // 使用递归上下文中的 parentId (目标环境的父ID)
+                        path: s.path,
+                        icon: s.icon,
+                        component: s.component,
+                        componentName: s.componentName,
+                        status: s.status, // 原始状态 (number)
+                        visible: s.visible,
+                        keepAlive: s.keepAlive,
+                        alwaysShow: s.alwaysShow,
+                        systemType: s.systemType ?? 0
+                    };
+
+                    if (node.status === 'NEW') {
+                         addLog(`正在创建: ${node.name}`, 'info');
+                         currentTargetId = await createMenuAction(payload, target);
+                         successCount++;
+                    } else if (node.status === 'UPDATE' && node.targetId) {
+                         addLog(`正在更新: ${node.name}`, 'warn');
+                         // 更新时，必须传入目标环境的 ID (node.targetId)，绝对不能传 source.id
+                         await updateMenuAction({ ...payload, id: node.targetId }, target);
+                         successCount++;
                     } else {
-                        addLog(`[SKIP] ${sMenu.name} (内容一致)`, 'info');
+                         skipCount++;
                     }
-                    shouldRecurse = true; 
-                } else {
-                     // Case 2: 用户没勾选 -> 只有当目标端存在此节点时，才允许同步其子节点
-                     if (currentId) {
-                         shouldRecurse = true;
-                     } 
-                     // else: 没勾选且目标端不存在 -> 无法挂载子节点 -> 跳过
+                } else if (node.status === 'SAME') {
+                    // 即使未选中（或无变更），也需要继续处理其子节点
+                    skipCount++;
                 }
 
-                if (shouldRecurse && sMenu.children && sMenu.children.length > 0 && currentId) {
-                    const result = await syncRecursive(sMenu.children, tMenu?.children || [], currentId);
-                    added += result.added;
-                    updated += result.updated;
+                // 如果当前节点在该环境已有有效ID（无论是刚创建的还是已存在的），则继续递归处理子节点
+                if (currentTargetId && node.children && node.children.length > 0) {
+                    await syncRecursive(node.children, currentTargetId);
                 }
             }
-            return { added, updated };
         };
 
-        // Fix: Don't wrap selectedRoot in array, use its children directly if we are syncing a subtree, 
-        // OR better: handle the recursive logic to start FROM the selected items.
-        
-        // 修正逻辑：我们应该遍历 sourceTree 的顶层，找到 selectedRoot
-        // 但是 syncRecursive 的 entry 需要调整。
-        // 如果 selectedRoot 本身被选中了，我们得从它开始同步。
-        
-        // 查找目标环境对应的 Root 节点 (通常是 'CRM系统' 这种顶级目录)
-        // 注意：顶级节点通常 parentId = 0
-        
-        let targetRootId = 0;
-        const targetRoot = targetTree.find(m => m.name === selectedRoot.name); // 顶层只按名字/权限粗略匹配
-        
-        // Root level stats
-        let rootAdded = 0;
-        let rootUpdated = 0;
-
-        if (targetRoot) {
-             targetRootId = targetRoot.id;
-             // 如果顶层节点本身也被勾选了，检查是否需要更新
-             if (selectedMenus.has(selectedRoot.id) && !isMenuEqual(selectedRoot, targetRoot)) {
-                 addLog(`[UPDATE ROOT] ${selectedRoot.name}`, 'warn');
-                 const { id, parentId, children, createTime, ...data } = selectedRoot;
-                 await updateMenuAction({ ...data, id: targetRoot.id, parentId: 0 }, target);
-                 rootUpdated++; // Count root update
-             }
-        } else if (selectedMenus.has(selectedRoot.id)) {
-             // 目标不存在顶层节点，且用户勾选了顶层，则创建
-             addLog(`[CREATE ROOT] ${selectedRoot.name}`, 'info');
-             const { id, parentId, children, createTime, ...data } = selectedRoot;
-             targetRootId = await createMenuAction({ ...data, parentId: 0 }, target);
-             rootAdded++;
-        } else {
-            // 目标不存在顶层，且用户没勾选顶层（这很奇怪，通常应该勾选），
-            // 但如果只想同步子菜单，而父菜单不存在，是无法挂载的。
-            // 这种情况下，我们假设用户希望同步到根目录下，或者报错提示。
-            // 为了安全，如果父节点必选但没选，我们跳过或报错。
-            // 现行逻辑：尝试在 target 找同名节点作为 parent。找不到就无法继续。
-             if (!targetRoot) {
-                 // 如果选了子节点但没选父节点，且目标不存在父节点，这会导致子节点无法挂载
-                 // 为简化逻辑，我们强制要求：如果要同步，必须保证父节点存在（要么已存在，要么本次勾选同步）
-                 throw new Error(`目标环境缺少顶级节点 "${selectedRoot.name}"。请先勾选该节点以创建它，或确保它已存在于目标环境！`);
-             }
-             targetRootId = targetRoot.id; // TS should be happy now as we handled !targetRoot
+        // 处理根节点同步
+        // 如果根节点在目标端不存在，且未被选中，则无法继续挂载子节点
+        if (!rootNode.targetId && !selectedMenus.has(rootNode.id)) {
+            throw new Error(`根节点 [${rootNode.name}] 不存在且未选中同步，无法同步子节点`);
         }
 
-        // 开始递归同步子节点
-        // Fix: 即使父节点没被勾选，也需要进入递归，去检查有没有勾选的子节点 (的前提是父节点在目标端已存在)
-        const result = await syncRecursive(selectedRoot.children || [], targetRoot?.children || [], targetRootId);
+        let rootTargetId = rootNode.targetId;
         
-        // Add root stats
-        result.added += rootAdded;
-        result.updated += rootUpdated;
-        addLog(`✅ 同步圆满完成! 新增: ${result.added}, 更新: ${result.updated}`, 'success');
-        await loadData('target');
+        // 如果选中了根节点，先处理根节点
+        if (selectedMenus.has(rootNode.id)) {
+             const s = rootNode.sourceMenu || rootNode;
+             const payload = {
+                 name: s.name,
+                 permission: s.permission,
+                 type: s.type,
+                 sort: s.sort,
+                 parentId: 0,
+                 path: s.path,
+                 icon: s.icon,
+                 component: s.component,
+                 componentName: s.componentName,
+                 status: s.status,
+                 visible: s.visible,
+                 keepAlive: s.keepAlive,
+                 alwaysShow: s.alwaysShow,
+                 systemType: s.systemType ?? 0
+             };
+
+             if (rootNode.status === 'NEW') {
+                 addLog(`创建根节点: ${rootNode.name}`, 'info');
+                 rootTargetId = await createMenuAction(payload, target);
+             } else if (rootNode.status === 'UPDATE' && rootNode.targetId) {
+                 addLog(`更新根节点: ${rootNode.name}`, 'warn');
+                 await updateMenuAction({ ...payload, id: rootNode.targetId }, target);
+             }
+        }
+        
+        // 递归处理子树
+        if (rootTargetId && rootNode.children) {
+            await syncRecursive(rootNode.children, rootTargetId);
+        }
+
+        addLog(`✅ 同步完成! 成功处理: ${successCount} 项`, 'success');
+        
+        // 重新分析以刷新状态
+        await handleAnalyze();
+
     } catch (error) {
-        addLog(`❌ 同步中断: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
+        addLog(`❌ 同步失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
     } finally {
         setSyncing(false);
     }
@@ -205,100 +230,117 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen text-[var(--foreground)] bg-[var(--background)]">
+    <div className="min-h-screen text-slate-100 selection:bg-blue-500/30">
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950 -z-10" />
       
-      <nav className="sticky top-0 z-50 border-b border-[var(--border)] bg-white px-6 py-4 shadow-sm">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-md px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-200">
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Zap className="text-white w-6 h-6 fill-white" />
             </div>
             <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                    MenuSync Pro <span className="text-blue-600 text-xs font-mono ml-2 px-1.5 py-0.5 bg-blue-50 rounded-full">v3.0</span>
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                    MenuSync Pro <span className="text-blue-500 text-xs font-mono ml-2">v3.1 DIFF</span>
                 </h1>
-                <p className="text-[12px] text-gray-500">Enterprise Data Synchronization Tool</p>
+                <p className="text-[10px] text-slate-500 font-mono">Next.js 15 + React 19 + Diff Engine</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-500 font-mono text-[10px]">BUN 1.3.5</Badge>
+            <Badge variant="outline" className="border-white/10 bg-white/5 font-mono text-[10px]">RUNTIME: BUN 1.3.5</Badge>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 pb-20">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
+            <div className="bg-slate-900 border border-slate-700 p-2 rounded-full shadow-xl">
+                <ArrowRightLeft className="w-5 h-5 text-slate-400" />
+            </div>
+          </div>
           <EnvironmentCard 
             title="来源环境" 
             config={source} 
             onUpdate={setSource} 
-            onConnected={(c) => { setSourceConnected(c); if(c) loadData('source'); }}
+            onConnected={(c) => setSourceConnected(c)}
           />
           <EnvironmentCard 
             title="目标环境" 
             config={target} 
             onUpdate={setTarget} 
-            onConnected={(c) => { setTargetConnected(c); if(c) loadData('target'); }}
+            onConnected={(c) => setTargetConnected(c)}
           />
         </section>
 
+        {/* 全局操作栏 */}
+        <section className="flex justify-center">
+             <Button 
+                size="lg" 
+                className={cn(
+                    "w-full max-w-md h-12 text-lg shadow-2xl transition-all",
+                    analyzing 
+                        ? "bg-slate-800 cursor-not-allowed" 
+                        : "bg-blue-600 hover:bg-blue-500 hover:scale-105 active:scale-95 shadow-blue-500/30"
+                )}
+                disabled={!source.isConnected || !target.isConnected || analyzing}
+                onClick={handleAnalyze}
+             >
+                {analyzing ? (
+                    <>
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        正在分析差异...
+                    </>
+                ) : (
+                    <>
+                        <Search className="mr-2 h-5 w-5" />
+                        开始对比分析 (Diff Analysis)
+                    </>
+                )}
+             </Button>
+        </section>
+
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-8 bg-white border-[var(--border)] shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--border)] pb-4">
+            <Card className="lg:col-span-8 bg-slate-900/50 border-white/5 backdrop-blur-sm shadow-2xl">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <div>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2 text-gray-900">
-                            <ListTree className="text-blue-600 w-5 h-5" /> 同步配置面板
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <ListTree className="text-blue-500 w-5 h-5" /> 差异对比面板
+                            {diffTree.length > 0 && (
+                                <span className="ml-2 flex gap-2 text-xs font-normal">
+                                    <Badge variant="outline" className="text-green-400 border-green-500/30 bg-green-500/10">+{stats.added} 新增</Badge>
+                                    <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">~{stats.updated} 变更</Badge>
+                                </span>
+                            )}
                         </CardTitle>
-                        <CardDescription className="text-gray-500">选择需要迁移的系统模块及具体菜单项</CardDescription>
+                        <CardDescription>对比结果预览，请勾选需要同步的项目</CardDescription>
                     </div>
-                    {selectedMenus.size > 0 && <Badge className="bg-blue-600 text-white hover:bg-blue-600">{selectedMenus.size} 已选</Badge>}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="relative col-span-2">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10 pointer-events-none" />
-                            <Select 
-                                value={selectedSystem} 
-                                onValueChange={(val) => {
-                                    setSelectedSystem(val);
-                                    setSelectedMenus(new Set());
-                                }}
-                            >
-                                <SelectTrigger className="w-full h-10 pl-9 bg-white border-gray-200 hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 data-[state=open]:border-blue-500 transition-all">
-                                    <SelectValue placeholder="选择系统平台..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sourceTree.length === 0 ? (
-                                        <div className="p-2 text-sm text-gray-400 text-center">暂无数据，请先连接环境</div>
-                                    ) : (
-                                        sourceTree.map(m => (
-                                            <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button 
-                            className="bg-blue-600 hover:bg-blue-500 shadow-sm h-10"
-                            disabled={!selectedSystem || syncing}
-                            onClick={() => {
-                                const sys = sourceTree.find(m => m.name === selectedSystem);
-                                if (!sys) return;
-                                const ids = new Set<number>();
-                                const collect = (m: Menu) => { ids.add(m.id); m.children?.forEach(collect); };
-                                ids.add(sys.id);
-                                sys.children?.forEach(collect);
-                                setSelectedMenus(ids);
+                    {/* 系统选择器 */}
+                     <div className="relative">
+                        <select 
+                            className="w-full h-10 pl-4 pr-4 bg-slate-950/70 border border-white/10 rounded-lg text-sm text-slate-200 outline-none focus:ring-2 ring-blue-500/50 appearance-none disabled:opacity-50"
+                            value={selectedSystem}
+                            disabled={diffTree.length === 0}
+                            onChange={(e) => {
+                                setSelectedSystem(e.target.value);
+                                setSelectedMenus(new Set()); // 切换系统时清空选择
                             }}
                         >
-                            全选模块
-                        </Button>
+                            <option value="">{diffTree.length === 0 ? "请先执行分析..." : "选择需要同步的系统模块..."}</option>
+                            {diffTree.map(m => (
+                                <option key={m.id} value={m.name} className="bg-slate-900">
+                                    {m.name} ({m.status === 'SAME' ? '无变更' : `${m.status}`})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
-                  <div className="min-h-[400px] bg-gray-50/50 p-4 border border-dashed border-gray-200 rounded-xl">
+                    <div className="min-h-[400px] bg-slate-950/30 p-4 border border-white/5 rounded-xl">
                         {selectedSystem ? (
-                            <MenuTreeTable 
-                                data={sourceTree.find(m => m.name === selectedSystem)?.children || []}
+                            <MenuDiffTable 
+                                data={diffTree.find(m => m.name === selectedSystem)?.children || []} // 显示选中系统的子节点
                                 selectedMenus={selectedMenus}
                                 onToggle={toggleMenu}
                                 onSelectAll={setSelectedMenus}
@@ -307,16 +349,19 @@ export default function Home() {
                         ) : (
                             <div className="h-[360px] flex flex-col items-center justify-center text-slate-500 space-y-3 opacity-30">
                                 <Search className="w-12 h-12 stroke-[1]" />
-                                <p className="text-sm font-medium">请先选择一个来源系统以展示菜单树</p>
+                                <p className="text-sm font-medium">请先执行分析，并选择一个系统以查看差异</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-4 gap-4 items-center">
+                         <div className="text-xs text-slate-500">
+                            已选择 {selectedMenus.size} 个同步项
+                         </div>
                         <Button 
                             size="lg"
-                            className="w-full md:w-auto min-w-[200px] bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 border-0 py-6 text-base font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                            disabled={!selectedSystem || selectedMenus.size === 0 || syncing || !target.isConnected}
+                            className="w-full md:w-auto min-w-[200px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-xl shadow-blue-500/40 border-0 py-6 text-base font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            disabled={!selectedSystem || selectedMenus.size === 0 || syncing}
                             onClick={handleSync}
                         >
                             {syncing ? (
@@ -324,35 +369,35 @@ export default function Home() {
                             ) : (
                                 <Zap className="w-5 h-5 mr-2 fill-current" />
                             )}
-                            {syncing ? '极速同步中...' : '开始执行双机同步'}
+                            {syncing ? '正在同步...' : '执行选中同步'}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card className="lg:col-span-4 bg-white border-[var(--border)] shadow-sm flex flex-col max-h-[750px] group">
-                <CardHeader className="bg-gray-50 p-4 border-b border-[var(--border)]">
-                    <CardTitle className="text-[12px] font-bold font-mono flex items-center gap-2 text-gray-500 tracking-widest uppercase">
-                        <Terminal className="w-3.5 h-3.5" /> 操作日志
+            <Card className="lg:col-span-4 bg-slate-950 border-white/10 shadow-3xl overflow-hidden flex flex-col max-h-[850px] group">
+                <CardHeader className="bg-slate-900 p-4 border-b border-white/5">
+                    <CardTitle className="text-[10px] font-bold font-mono flex items-center gap-2 text-slate-500 tracking-widest uppercase">
+                        <Terminal className="w-3.5 h-3.5" /> SYNC_OPERATION_LOGS
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 font-mono text-[12px] leading-relaxed space-y-2 overflow-y-auto overflow-x-hidden scrollbar-thin">
+                <CardContent className="flex-1 p-4 font-mono text-[11px] leading-relaxed space-y-2 overflow-y-auto overflow-x-hidden scrollbar-none">
                     <AnimatePresence>
-                        {logs.length === 0 && <div className="text-gray-400 text-center py-20 italic font-sans flex flex-col items-center gap-2"><div className="w-8 h-8 rounded-full bg-gray-100 mb-2" />等待操作指令...</div>}
+                        {logs.length === 0 && <div className="text-slate-700 text-center py-20 italic font-sans">等待操作指令...</div>}
                         {logs.map((log) => (
                             <motion.div 
                                 key={log.id}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className={cn(
-                                    "border-b border-gray-50 pb-1.5 flex gap-2 transition-all",
-                                    log.type === 'error' ? "text-red-500 bg-red-50 px-1 rounded" : 
-                                    log.type === 'success' ? "text-green-600 bg-green-50 px-1 rounded" : 
-                                    log.type === 'warn' ? "text-orange-500" : "text-gray-600"
+                                    "border-b border-white/5 pb-1.5 flex gap-2 transition-all",
+                                    log.type === 'error' ? "text-red-400 bg-red-400/5 px-1 rounded" : 
+                                    log.type === 'success' ? "text-green-400 bg-green-400/5 px-1 rounded" : 
+                                    log.type === 'warn' ? "text-amber-400" : "text-slate-400"
                                 )}
                             >
                                 <span className="text-slate-600 shrink-0 font-medium">[{log.timestamp.toLocaleTimeString()}]</span>
-                                <span className="flex-1">{log.message}</span>
+                                <span className="flex-1 break-all">{log.message}</span>
                             </motion.div>
                         ))}
                     </AnimatePresence>

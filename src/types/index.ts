@@ -15,6 +15,7 @@ export interface Menu {
   parentId: number;
   children?: Menu[];
   createTime?: number;
+  systemType: number; // 0: 榜样教育系统, 1: BI系统
 }
 
 export interface ApiConfig {
@@ -34,7 +35,16 @@ export interface EnvConfig extends ApiConfig {
   isConnected: boolean;
 }
 
-export interface SyncResult {
-  added: number;
-  updated: number;
+
+export type DiffStatus = 'NEW' | 'UPDATE' | 'SAME';
+
+export interface DiffNode extends Omit<Menu, 'status' | 'children'> {
+  status: DiffStatus;
+  targetId?: number; // ID in the target system if it exists
+  diffFields: string[]; // List of fields that are different
+  sourceMenu?: Menu;
+  targetMenu?: Menu;
+  children?: DiffNode[];
+  expanded?: boolean;
+  level?: number;
 }
