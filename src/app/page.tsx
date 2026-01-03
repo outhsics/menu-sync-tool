@@ -102,9 +102,29 @@ export default function Home() {
   };
 
   // 同步执行逻辑
-  const handleSync = async () => {
+    const handleSync = async () => {
     if (!source.isConnected || !target.isConnected || diffTree.length === 0) return;
     setSyncing(true);
+    
+    // Auto Backup
+    try {
+        addLog('💾 正在备份目标环境菜单...', 'info');
+        const backupData = await fetchMenusAction(target);
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `menu_backup_target_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        addLog('✅ 备份文件已下载', 'success');
+    } catch (e) {
+        addLog('❌ 备份失败，但继续执行同步', 'warn');
+        console.error(e);
+    }
+
     addLog('🚀 启动增量同步...', 'info');
 
     try {
@@ -233,7 +253,7 @@ export default function Home() {
     <div className="min-h-screen text-slate-100 selection:bg-blue-500/30">
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950 -z-10" />
       
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-md px-6 py-4">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -247,6 +267,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <LoginModal />
             <Badge variant="outline" className="border-white/10 bg-white/5 font-mono text-[10px]">RUNTIME: BUN 1.3.5</Badge>
           </div>
         </div>
@@ -301,7 +322,7 @@ export default function Home() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-8 bg-slate-900/50 border-white/5 backdrop-blur-sm shadow-2xl">
+            <Card className="lg:col-span-8 bg-slate-900 border-white/5 shadow-2xl">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <div>
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -337,7 +358,7 @@ export default function Home() {
                         </select>
                     </div>
 
-                    <div className="min-h-[400px] bg-slate-950/30 p-4 border border-white/5 rounded-xl">
+                    <div className="min-h-[400px] bg-slate-950 p-4 border border-white/5 rounded-xl">
                         {selectedSystem ? (
                             <MenuDiffTable 
                                 data={diffTree.find(m => m.name === selectedSystem)?.children || []} // 显示选中系统的子节点
