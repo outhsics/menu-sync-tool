@@ -275,7 +275,7 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     <TableCell>
                                         <div 
                                             className="flex items-center gap-2 select-none"
-                                            style={{ paddingLeft: `${node.level * 20}px` }}
+                                            style={{ paddingLeft: `${(node.level ?? 0) * 20}px` }}
                                         >
                                             {node.hasChildren ? (
                                                 <button 
