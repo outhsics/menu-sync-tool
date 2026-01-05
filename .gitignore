@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Backup folders
+/backup/
+
+# bs-web submodule (not part of this build)
+/bs-web/
