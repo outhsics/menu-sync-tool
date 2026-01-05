@@ -23,8 +23,8 @@ const defaultEnv: EnvConfig = {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      source: { ...defaultEnv, name: '来源环境 (Source)' },
-      target: { ...defaultEnv, name: '目标环境 (Target)' },
+      source: { ...defaultEnv, name: '来源环境 (Source)', apiBase: 'https://api-byjedu.com' },
+      target: { ...defaultEnv, name: '目标环境 (Target)', apiBase: 'https://test-api.bangyangjia.com' },
 
       setSource: (config) =>
         set((state) => ({
