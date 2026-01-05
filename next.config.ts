@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
-  // Optional: Disable image optimization since it requires a server
+  // Vercel handles optimization automatically
+  // If deploying elsewhere as static, uncomment: output: 'export',
   images: { unoptimized: true },
 };
 

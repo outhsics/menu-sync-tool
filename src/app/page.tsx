@@ -249,6 +249,23 @@ export default function Home() {
     });
   };
 
+  // 级联勾选：点击父级时，同时勾选/取消所有子级
+  const toggleMenuWithChildren = (id: number, allDescendantIds: number[]) => {
+    setSelectedMenus(prev => {
+        const next = new Set(prev);
+        const isCurrentlySelected = allDescendantIds.every(childId => prev.has(childId));
+        
+        if (isCurrentlySelected) {
+            // 当前全选 -> 取消全部
+            allDescendantIds.forEach(childId => next.delete(childId));
+        } else {
+            // 未全选 -> 全选
+            allDescendantIds.forEach(childId => next.add(childId));
+        }
+        return next;
+    });
+  };
+
   return (
     <div className="min-h-screen text-slate-100 selection:bg-blue-500/30">
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950 -z-10" />
@@ -364,6 +381,7 @@ export default function Home() {
                                 data={diffTree.find(m => m.name === selectedSystem)?.children || []} // 显示选中系统的子节点
                                 selectedMenus={selectedMenus}
                                 onToggle={toggleMenu}
+                                onToggleWithChildren={toggleMenuWithChildren}
                                 onSelectAll={setSelectedMenus}
                                 disabled={syncing}
                             />

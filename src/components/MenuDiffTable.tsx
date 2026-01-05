@@ -31,6 +31,7 @@ interface MenuDiffTableProps {
   data: DiffNode[];
   selectedMenus: Set<number>;
   onToggle: (id: number) => void;
+  onToggleWithChildren: (id: number, childIds: number[]) => void; // New prop for cascade
   onSelectAll: (ids: Set<number>) => void;
   disabled?: boolean;
 }
@@ -42,7 +43,26 @@ interface FlatDiffNode extends DiffNode {
   parentExpanded: boolean;
 }
 
-export function MenuDiffTable({ data, selectedMenus, onToggle, onSelectAll, disabled }: MenuDiffTableProps) {
+export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChildren, onSelectAll, disabled }: MenuDiffTableProps) {
+  // Helper to collect all descendant IDs (深度优先)
+  const getAllDescendantIds = (node: DiffNode): number[] => {
+    const ids: number[] = [];
+    const collect = (n: DiffNode) => {
+      ids.push(n.id);
+      n.children?.forEach(collect);
+    };
+    collect(node);
+    return ids;
+  };
+
+  // Helper to check if a node is indeterminate (some but not all children selected)
+  const getCheckboxState = (node: DiffNode): 'checked' | 'unchecked' | 'indeterminate' => {
+    const allIds = getAllDescendantIds(node);
+    const selectedCount = allIds.filter(id => selectedMenus.has(id)).length;
+    if (selectedCount === 0) return 'unchecked';
+    if (selectedCount === allIds.length) return 'checked';
+    return 'indeterminate';
+  };
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [showSame, setShowSame] = useState(false); // Toggle to show/hide unchanged items
@@ -214,16 +234,33 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onSelectAll, disa
                                     )}
                                 >
                                     <TableCell className="text-center px-0">
-                                        <Checkbox 
-                                            checked={isSelected}
-                                            onCheckedChange={() => onToggle(node.id)}
-                                            disabled={disabled || isSame} // Allow selecting SAME? Typically no need to sync SAME.
-                                            className={cn(
-                                                "border-slate-600",
-                                                isNew && "data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600",
-                                                isUpdate && "data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
-                                            )}
-                                        />
+                                        {(() => {
+                                            const checkState = getCheckboxState(node);
+                                            return (
+                                                <Checkbox 
+                                                    checked={checkState === 'checked'}
+                                                    ref={(el) => {
+                                                        if (el) {
+                                                            // Set indeterminate state via DOM
+                                                            (el as HTMLButtonElement).dataset.state = 
+                                                                checkState === 'indeterminate' ? 'indeterminate' : 
+                                                                checkState === 'checked' ? 'checked' : 'unchecked';
+                                                        }
+                                                    }}
+                                                    onCheckedChange={(checked) => {
+                                                        const allIds = getAllDescendantIds(node);
+                                                        onToggleWithChildren(node.id, allIds);
+                                                    }}
+                                                    disabled={disabled || isSame}
+                                                    className={cn(
+                                                        "border-slate-600",
+                                                        isNew && "data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600",
+                                                        isUpdate && "data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600",
+                                                        checkState === 'indeterminate' && "data-[state=indeterminate]:bg-blue-500/50 data-[state=indeterminate]:border-blue-500"
+                                                    )}
+                                                />
+                                            );
+                                        })()}
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="outline" className={cn(
