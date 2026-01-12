@@ -54,18 +54,18 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
       transition={{ duration: 0.5 }}
     >
       <Card className={cn(
-        "relative overflow-hidden border border-[var(--border)] bg-white shadow-sm hover:shadow-md transition-all",
-        config.isConnected && "border-blue-500 ring-2 ring-blue-100"
+        "relative overflow-hidden border border-[var(--border)] bg-slate-900/50 shadow-sm hover:shadow-md transition-all",
+        config.isConnected && "border-blue-500 ring-2 ring-blue-500/20"
       )}>
         {config.isConnected && (
             <div className="absolute top-0 right-0 p-2">
-                <Badge className="bg-green-50 text-green-600 border-green-200">已连接</Badge>
+                <Badge className="bg-green-500/10 text-green-400 border-green-500/20">已连接</Badge>
             </div>
         )}
         
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Link2 className={cn("w-5 h-5", config.isConnected ? "text-blue-500" : "text-gray-400")} />
+            <Link2 className={cn("w-5 h-5", config.isConnected ? "text-blue-500" : "text-slate-400")} />
             {title}
           </CardTitle>
           <CardDescription>配置同步环境的 API 与凭证</CardDescription>
@@ -78,7 +78,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
               placeholder="https://api-byjedu.com" 
               value={config.apiBase}
               onChange={(e) => onUpdate({ apiBase: e.target.value, isConnected: false })}
-              className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+              className="bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
               list={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}
             />
             <datalist id={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}>
@@ -95,7 +95,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                 <Input 
                     value={config.tenantId}
                     onChange={(e) => onUpdate({ tenantId: e.target.value, isConnected: false })}
-                    className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
                 />
             </div>
             <div className="col-span-3 space-y-2">
@@ -105,7 +105,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                     placeholder="粘贴 Access Token" 
                     value={config.token}
                     onChange={(e) => onUpdate({ token: e.target.value, isConnected: false })}
-                    className="font-mono text-sm bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="font-mono text-sm bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
                 />
             </div>
           </div>
@@ -116,7 +116,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="text-xs text-red-500 flex items-center gap-1.5 p-2 rounded bg-red-50 border border-red-100"
+                className="text-xs text-red-500 flex items-center gap-1.5 p-2 rounded bg-red-500/10 border border-red-500/20"
               >
                 <X className="w-3.5 h-3.5" /> {error}
               </motion.div>
@@ -129,7 +129,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
               disabled={loading || !config.apiBase || !config.token}
               className={cn(
                 "flex-1 transition-all",
-                config.isConnected ? "bg-green-500 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-500"
+                config.isConnected ? "bg-green-500/100 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-500"
               )}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
@@ -140,7 +140,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                 variant="outline" 
                 size="icon" 
                 onClick={() => onUpdate({ apiBase: '', token: '', tenantId: '1', isConnected: false })}
-                className="border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                className="border-white/10 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
             >
                 <Trash2 className="w-4 h-4" />
             </Button>
