@@ -152,14 +152,17 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                         placeholder="搜索菜单..." 
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="pl-8 bg-slate-950/50 border-slate-800 h-9 text-sm"
+                        className="pl-8 bg-white border-slate-200 h-9 text-sm focus:border-blue-500 focus:ring-blue-500/20"
                     />
                 </div>
                 <Button 
                     variant={showSame ? "secondary" : "outline"} 
                     size="sm" 
                     onClick={() => setShowSame(!showSame)}
-                    className="h-9 gap-2 border-slate-800"
+                    className={cn(
+                        "h-9 gap-2", 
+                        showSame ? "bg-slate-200 hover:bg-slate-300" : "bg-white border-slate-200 text-slate-600"
+                    )}
                 >
                     <Filter className="w-3.5 h-3.5" />
                     {showSame ? '隐藏无变更' : '显示全部'}
@@ -167,19 +170,19 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
             </div>
             
             <div className="flex gap-2">
-                 <div className="flex items-center gap-2 text-[10px] uppercase font-mono mr-4 bg-slate-900/50 px-3 py-1 rounded border border-white/5">
+                 <div className="flex items-center gap-2 text-[10px] uppercase font-mono mr-4 bg-slate-100 px-3 py-1 rounded border border-slate-200 text-slate-500">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> New</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Update</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-600"></span> Same</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300"></span> Same</span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setExpandedNodes(new Set())} className="h-9 text-xs text-slate-400">全部折叠</Button>
+                <Button variant="ghost" size="sm" onClick={() => setExpandedNodes(new Set())} className="h-9 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100">全部折叠</Button>
             </div>
         </div>
 
-        <div className="border rounded-md border-slate-800 bg-slate-950/30 overflow-hidden">
+        <div className="border rounded-md border-slate-200 bg-white overflow-hidden shadow-sm">
             <Table>
-                <TableHeader className="bg-slate-900/50">
-                    <TableRow className="border-slate-800 hover:bg-transparent">
+                <TableHeader className="bg-slate-50">
+                    <TableRow className="border-slate-200 hover:bg-transparent">
                         <TableHead className="w-[40px] text-center px-0">
                             <Checkbox 
                                 checked={visibleRows.length > 0 && visibleRows.every(d => selectedMenus.has(d.id))}
@@ -195,15 +198,15 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     }
                                 }}
                                 disabled={disabled}
-                                className="border-slate-600 data-[state=checked]:bg-blue-600"
+                                className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                             />
                         </TableHead>
-                        <TableHead className="w-[80px] text-center">状态</TableHead>
-                        <TableHead className="min-w-[250px]">菜单名称</TableHead>
-                        <TableHead className="w-[50px] text-center">图标</TableHead>
-                        <TableHead className="w-[50px] text-center">排序</TableHead>
-                        <TableHead>权限标识</TableHead>
-                        <TableHead>组件路径</TableHead>
+                        <TableHead className="w-[80px] text-center text-slate-600">状态</TableHead>
+                        <TableHead className="min-w-[250px] text-slate-600">菜单名称</TableHead>
+                        <TableHead className="w-[50px] text-center text-slate-600">图标</TableHead>
+                        <TableHead className="w-[50px] text-center text-slate-600">排序</TableHead>
+                        <TableHead className="text-slate-600">权限标识</TableHead>
+                        <TableHead className="text-slate-600">组件路径</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -227,10 +230,11 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                 <TableRow 
                                     key={node.id} 
                                     className={cn(
-                                        "border-slate-800/50 transition-colors bg-slate-950/20",
-                                        isNew && "bg-green-500/5 hover:bg-green-500/10",
-                                        isUpdate && "bg-amber-500/5 hover:bg-amber-500/10",
-                                        isSame && "opacity-60 hover:opacity-80"
+                                        "border-slate-100 transition-colors",
+                                        isNew && "bg-green-50 hover:bg-green-100/50",
+                                        isUpdate && "bg-amber-50 hover:bg-amber-100/50",
+                                        isSame && "text-slate-500 hover:bg-slate-50",
+                                        !isSame && isSelected && "bg-blue-50/50"
                                     )}
                                 >
                                     <TableCell className="text-center px-0">
@@ -253,7 +257,7 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                                     }}
                                                     disabled={disabled || isSame}
                                                     className={cn(
-                                                        "border-slate-600",
+                                                        "border-slate-400",
                                                         isNew && "data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600",
                                                         isUpdate && "data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600",
                                                         checkState === 'indeterminate' && "data-[state=indeterminate]:bg-blue-500/50 data-[state=indeterminate]:border-blue-500"
@@ -264,10 +268,10 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="outline" className={cn(
-                                            "font-mono text-[10px] px-1.5 h-5 border-0",
-                                            isNew && "bg-green-500/20 text-green-400 font-bold",
-                                            isUpdate && "bg-amber-500/20 text-amber-400 font-bold",
-                                            isSame && "bg-slate-800 text-slate-500"
+                                            "font-mono text-[10px] px-1.5 h-5 border-0 shadow-none",
+                                            isNew && "bg-green-100 text-green-700 font-bold",
+                                            isUpdate && "bg-amber-100 text-amber-700 font-bold",
+                                            isSame && "bg-slate-100 text-slate-500"
                                         )}>
                                             {isNew ? 'NEW' : isUpdate ? 'MOD' : 'SAME'}
                                         </Badge>
@@ -280,7 +284,7 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                             {node.hasChildren ? (
                                                 <button 
                                                     onClick={() => toggleExpand(node.id)}
-                                                    className="p-0.5 hover:bg-slate-700/50 rounded transition-colors"
+                                                    className="p-0.5 hover:bg-slate-200 rounded transition-colors"
                                                 >
                                                     {node.expanded ? (
                                                         <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -292,8 +296,8 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                             
                                             <span className={cn(
                                                 "text-sm font-medium truncate max-w-[200px]",
-                                                isSelected ? "text-slate-100" : "text-slate-300",
-                                                (isNew || isUpdate) && "text-white"
+                                                isSelected && !isSame ? "text-slate-900" : "text-slate-600",
+                                                (isNew || isUpdate) && "text-slate-900"
                                             )}>
                                                 {node.name}
                                             </span>
@@ -323,11 +327,11 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     {/* Permission Column with Diff */}
                                     <TableCell>
                                         <div className="flex flex-col gap-1">
-                                            <span className={cn("text-xs font-mono", node.diffFields?.includes('permission') && "text-amber-400")}>
+                                            <span className={cn("text-xs font-mono", node.diffFields?.includes('permission') && "text-amber-600 font-bold")}>
                                                 {node.permission || '-'}
                                             </span>
                                             {node.diffFields?.includes('permission') && node.targetMenu && (
-                                                <span className="text-[10px] text-slate-500 line-through">
+                                                <span className="text-[10px] text-slate-400 line-through">
                                                     {node.targetMenu.permission || 'EMPTY'}
                                                 </span>
                                             )}
@@ -361,17 +365,16 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
 // Simple helper to show Old -> New if different
 function DiffField({ original, target, isDiff, className }: { original: any, target: any, isDiff?: boolean, className?: string, label: string }) {
     if (!isDiff || target === undefined) {
-        return <span className={cn("text-slate-400", className)} title={String(original)}>{original || '-'}</span>;
+        return <span className={cn("text-slate-500", className)} title={String(original)}>{original || '-'}</span>;
     }
     return (
         <div className="flex flex-col items-start text-xs group cursor-help">
-            <span className={cn("text-amber-400 font-bold bg-amber-400/10 px-1 rounded", className)} title="New Value">
+            <span className={cn("text-amber-600 font-bold bg-amber-100 px-1 rounded", className)} title="New Value">
                 {original || 'EMPTY'}
             </span>
-            <span className="text-[10px] text-slate-600 line-through mt-0.5" title="Current Value on Target">
+            <span className="text-[10px] text-slate-400 line-through mt-0.5" title="Current Value on Target">
                 {target || 'EMPTY'}
             </span>
         </div>
     );
 }
-

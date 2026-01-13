@@ -54,31 +54,31 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
       transition={{ duration: 0.5 }}
     >
       <Card className={cn(
-        "relative overflow-hidden border border-[var(--border)] bg-slate-900/50 shadow-sm hover:shadow-md transition-all",
-        config.isConnected && "border-blue-500 ring-2 ring-blue-500/20"
+        "relative overflow-hidden border border-slate-200 bg-white shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all",
+        config.isConnected && "border-blue-500 ring-2 ring-blue-500/10"
       )}>
         {config.isConnected && (
             <div className="absolute top-0 right-0 p-2">
-                <Badge className="bg-green-500/10 text-green-400 border-green-500/20">已连接</Badge>
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20 shadow-none">已连接</Badge>
             </div>
         )}
         
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+        <CardHeader className="space-y-1 bg-slate-50/50 pb-4 border-b border-slate-100">
+          <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
             <Link2 className={cn("w-5 h-5", config.isConnected ? "text-blue-500" : "text-slate-400")} />
             {title}
           </CardTitle>
-          <CardDescription>配置同步环境的 API 与凭证</CardDescription>
+          <CardDescription className="text-slate-500">配置同步环境的 API 与凭证</CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">API 基础路径</Label>
+            <Label className="text-sm font-medium text-slate-700">API 基础路径</Label>
             <Input 
               placeholder="https://api-byjedu.com" 
               value={config.apiBase}
               onChange={(e) => onUpdate({ apiBase: e.target.value, isConnected: false })}
-              className="bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
+              className="bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-slate-800"
               list={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}
             />
             <datalist id={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}>
@@ -91,21 +91,21 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
           
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-1 space-y-2">
-                <Label className="text-sm font-medium">租户 ID</Label>
+                <Label className="text-sm font-medium text-slate-700">租户 ID</Label>
                 <Input 
                     value={config.tenantId}
                     onChange={(e) => onUpdate({ tenantId: e.target.value, isConnected: false })}
-                    className="bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-slate-800"
                 />
             </div>
             <div className="col-span-3 space-y-2">
-                <Label className="text-sm font-medium">Access Token</Label>
+                <Label className="text-sm font-medium text-slate-700">Access Token</Label>
                 <Input 
                     type="text"
                     placeholder="粘贴 Access Token" 
                     value={config.token}
                     onChange={(e) => onUpdate({ token: e.target.value, isConnected: false })}
-                    className="font-mono text-sm bg-slate-900/50 border-white/10 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="font-mono text-sm bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-slate-600"
                 />
             </div>
           </div>
@@ -116,7 +116,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="text-xs text-red-500 flex items-center gap-1.5 p-2 rounded bg-red-500/10 border border-red-500/20"
+                className="text-xs text-red-500 flex items-center gap-1.5 p-2 rounded bg-red-50 border border-red-100"
               >
                 <X className="w-3.5 h-3.5" /> {error}
               </motion.div>
@@ -128,8 +128,10 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
               onClick={handleTestConnection} 
               disabled={loading || !config.apiBase || !config.token}
               className={cn(
-                "flex-1 transition-all",
-                config.isConnected ? "bg-green-500/100 hover:bg-green-600" : "bg-blue-600 hover:bg-blue-500"
+                "flex-1 transition-all shadow-md",
+                config.isConnected 
+                    ? "bg-green-600 hover:bg-green-500 shadow-green-200 text-white" 
+                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-200 text-white"
               )}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
@@ -140,7 +142,7 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
                 variant="outline" 
                 size="icon" 
                 onClick={() => onUpdate({ apiBase: '', token: '', tenantId: '1', isConnected: false })}
-                className="border-white/10 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                className="border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors"
             >
                 <Trash2 className="w-4 h-4" />
             </Button>
