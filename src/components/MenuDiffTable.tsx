@@ -147,50 +147,48 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-1">
                 <div className="relative max-w-sm flex-1">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input 
-                        placeholder="搜索菜单..." 
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="搜索菜单..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="pl-8 bg-white border-slate-200 h-9 text-sm focus:border-blue-500 focus:ring-blue-500/20"
+                        className="pl-8 bg-background border-border h-9 text-sm focus:border-primary focus:ring-primary/20"
                     />
                 </div>
-                <Button 
-                    variant={showSame ? "secondary" : "outline"} 
-                    size="sm" 
+                <Button
+                    variant={showSame ? "secondary" : "outline"}
+                    size="sm"
                     onClick={() => setShowSame(!showSame)}
                     className={cn(
-                        "h-9 gap-2", 
-                        showSame ? "bg-slate-200 hover:bg-slate-300" : "bg-white border-slate-200 text-slate-600"
+                        "h-9 gap-2 cursor-pointer",
+                        showSame ? "bg-muted hover:bg-muted/80" : "bg-background border-border text-card-foreground"
                     )}
                 >
                     <Filter className="w-3.5 h-3.5" />
                     {showSame ? '隐藏无变更' : '显示全部'}
                 </Button>
             </div>
-            
+
             <div className="flex gap-2">
-                 <div className="flex items-center gap-2 text-[10px] uppercase font-mono mr-4 bg-slate-100 px-3 py-1 rounded border border-slate-200 text-slate-500">
+                 <div className="flex items-center gap-2 text-[10px] uppercase font-mono mr-4 bg-muted/50 px-3 py-1 rounded border border-border text-muted-foreground">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> New</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Update</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300"></span> Same</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-muted-foreground"></span> Same</span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setExpandedNodes(new Set())} className="h-9 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100">全部折叠</Button>
+                <Button variant="ghost" size="sm" onClick={() => setExpandedNodes(new Set())} className="h-9 text-xs text-muted-foreground hover:text-card-foreground hover:bg-muted/50 cursor-pointer">全部折叠</Button>
             </div>
         </div>
 
-        <div className="border rounded-md border-slate-200 bg-white overflow-hidden shadow-sm">
+        <div className="border rounded-md border-border bg-card overflow-hidden shadow-sm">
             <Table>
-                <TableHeader className="bg-slate-50">
-                    <TableRow className="border-slate-200 hover:bg-transparent">
+                <TableHeader className="bg-muted/50">
+                    <TableRow className="border-border hover:bg-transparent">
                         <TableHead className="w-[40px] text-center px-0">
-                            <Checkbox 
+                            <Checkbox
                                 checked={visibleRows.length > 0 && visibleRows.every(d => selectedMenus.has(d.id))}
                                 onCheckedChange={(checked) => {
                                     if(checked) {
                                         const all = new Set<number>();
-                                        // Only select visible nodes that are NOT SAME (usually)
-                                        // Or maybe select all visible? Let's select all visible for now.
                                         visibleRows.forEach(d => all.add(d.id));
                                         onSelectAll(all);
                                     } else {
@@ -198,21 +196,21 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     }
                                 }}
                                 disabled={disabled}
-                                className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                             />
                         </TableHead>
-                        <TableHead className="w-[80px] text-center text-slate-600">状态</TableHead>
-                        <TableHead className="min-w-[250px] text-slate-600">菜单名称</TableHead>
-                        <TableHead className="w-[50px] text-center text-slate-600">图标</TableHead>
-                        <TableHead className="w-[50px] text-center text-slate-600">排序</TableHead>
-                        <TableHead className="text-slate-600">权限标识</TableHead>
-                        <TableHead className="text-slate-600">组件路径</TableHead>
+                        <TableHead className="w-[80px] text-center text-card-foreground">状态</TableHead>
+                        <TableHead className="min-w-[250px] text-card-foreground">菜单名称</TableHead>
+                        <TableHead className="w-[50px] text-center text-card-foreground">图标</TableHead>
+                        <TableHead className="w-[50px] text-center text-card-foreground">排序</TableHead>
+                        <TableHead className="text-card-foreground">权限标识</TableHead>
+                        <TableHead className="text-card-foreground">组件路径</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {visibleRows.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={7} className="h-32 text-center text-slate-500">
+                            <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                                 <div className="flex flex-col items-center gap-2">
                                     <Search className="w-8 h-8 opacity-20" />
                                     <span>未发现匹配的差异项</span>
@@ -227,27 +225,26 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                             const isSame = node.status === 'SAME';
 
                             return (
-                                <TableRow 
-                                    key={node.id} 
+                                <TableRow
+                                    key={node.id}
                                     className={cn(
-                                        "border-slate-100 transition-colors",
-                                        isNew && "bg-green-50 hover:bg-green-100/50",
-                                        isUpdate && "bg-amber-50 hover:bg-amber-100/50",
-                                        isSame && "text-slate-500 hover:bg-slate-50",
-                                        !isSame && isSelected && "bg-blue-50/50"
+                                        "border-border transition-colors",
+                                        isNew && "bg-green-50 dark:bg-green-950/30 hover:bg-green-100/50 dark:hover:bg-green-950/50",
+                                        isUpdate && "bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100/50 dark:hover:bg-amber-950/50",
+                                        isSame && "text-muted-foreground hover:bg-muted/30",
+                                        !isSame && isSelected && "bg-primary/5"
                                     )}
                                 >
                                     <TableCell className="text-center px-0">
                                         {(() => {
                                             const checkState = getCheckboxState(node);
                                             return (
-                                                <Checkbox 
+                                                <Checkbox
                                                     checked={checkState === 'checked'}
                                                     ref={(el) => {
                                                         if (el) {
-                                                            // Set indeterminate state via DOM
-                                                            (el as HTMLButtonElement).dataset.state = 
-                                                                checkState === 'indeterminate' ? 'indeterminate' : 
+                                                            (el as HTMLButtonElement).dataset.state =
+                                                                checkState === 'indeterminate' ? 'indeterminate' :
                                                                 checkState === 'checked' ? 'checked' : 'unchecked';
                                                         }
                                                     }}
@@ -257,10 +254,10 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                                     }}
                                                     disabled={disabled || isSame}
                                                     className={cn(
-                                                        "border-slate-400",
+                                                        "border-border",
                                                         isNew && "data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600",
                                                         isUpdate && "data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600",
-                                                        checkState === 'indeterminate' && "data-[state=indeterminate]:bg-blue-500/50 data-[state=indeterminate]:border-blue-500"
+                                                        checkState === 'indeterminate' && "data-[state=indeterminate]:bg-primary/50 data-[state=indeterminate]:border-primary"
                                                     )}
                                                 />
                                             );
@@ -269,54 +266,53 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     <TableCell className="text-center">
                                         <Badge variant="outline" className={cn(
                                             "font-mono text-[10px] px-1.5 h-5 border-0 shadow-none",
-                                            isNew && "bg-green-100 text-green-700 font-bold",
-                                            isUpdate && "bg-amber-100 text-amber-700 font-bold",
-                                            isSame && "bg-slate-100 text-slate-500"
+                                            isNew && "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 font-bold",
+                                            isUpdate && "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-bold",
+                                            isSame && "bg-muted text-muted-foreground"
                                         )}>
                                             {isNew ? 'NEW' : isUpdate ? 'MOD' : 'SAME'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <div 
+                                        <div
                                             className="flex items-center gap-2 select-none"
                                             style={{ paddingLeft: `${(node.level ?? 0) * 20}px` }}
                                         >
                                             {node.hasChildren ? (
-                                                <button 
+                                                <button
                                                     onClick={() => toggleExpand(node.id)}
-                                                    className="p-0.5 hover:bg-slate-200 rounded transition-colors"
+                                                    className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer"
                                                 >
                                                     {node.expanded ? (
-                                                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                                                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                                     ) : (
-                                                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                                     )}
                                                 </button>
                                             ) : <span className="w-5" />}
-                                            
+
                                             <span className={cn(
                                                 "text-sm font-medium truncate max-w-[200px]",
-                                                isSelected && !isSame ? "text-slate-900" : "text-slate-600",
-                                                (isNew || isUpdate) && "text-slate-900"
+                                                isSelected && !isSame ? "text-card-foreground" : "text-muted-foreground",
+                                                (isNew || isUpdate) && "text-card-foreground"
                                             )}>
                                                 {node.name}
                                             </span>
                                         </div>
                                     </TableCell>
-                                    
+
                                     {/* Icon Column */}
                                     <TableCell className="text-center">
-                                         {/* Diff render logic could go here */}
                                          <div className="flex justify-center items-center gap-1">
                                             {node.type === 1 ? <Folder className="w-4 h-4 text-amber-500" /> :
-                                             node.type === 2 ? <LayoutGrid className="w-4 h-4 text-blue-500" /> :
+                                             node.type === 2 ? <LayoutGrid className="w-4 h-4 text-primary" /> :
                                              <MousePointerClick className="w-4 h-4 text-green-500" />}
                                          </div>
                                     </TableCell>
 
                                     {/* Sort Column with Diff */}
                                     <TableCell className="text-center font-mono text-xs">
-                                        <DiffField 
+                                        <DiffField
                                             label="Sort"
                                             original={node.sourceMenu?.sort}
                                             target={node.targetMenu?.sort}
@@ -327,11 +323,11 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                     {/* Permission Column with Diff */}
                                     <TableCell>
                                         <div className="flex flex-col gap-1">
-                                            <span className={cn("text-xs font-mono", node.diffFields?.includes('permission') && "text-amber-600 font-bold")}>
+                                            <span className={cn("text-xs font-mono", node.diffFields?.includes('permission') && "text-amber-600 dark:text-amber-400 font-bold")}>
                                                 {node.permission || '-'}
                                             </span>
                                             {node.diffFields?.includes('permission') && node.targetMenu && (
-                                                <span className="text-[10px] text-slate-400 line-through">
+                                                <span className="text-[10px] text-muted-foreground line-through">
                                                     {node.targetMenu.permission || 'EMPTY'}
                                                 </span>
                                             )}
@@ -340,7 +336,7 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
 
                                     {/* Component Column with Diff */}
                                     <TableCell>
-                                         <DiffField 
+                                         <DiffField
                                             label="path"
                                             original={node.component}
                                             target={node.targetMenu?.component}
@@ -355,7 +351,7 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                 </TableBody>
             </Table>
         </div>
-        <div className="text-xs text-slate-500 px-2">
+        <div className="text-xs text-muted-foreground px-2">
             <span>显示 {visibleRows.length} 项 (共 {data.length} 项)</span>
         </div>
     </div>
