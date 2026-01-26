@@ -82,9 +82,9 @@ export function EnvironmentCard({ title, config, onUpdate, onConnected }: Enviro
               list={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}
             />
             <datalist id={title === '来源环境' ? 'api-presets-source' : 'api-presets-target'}>
+              <option value="https://test-api.bangyangjia.com" />
               <option value="https://api-byjedu.com" />
               <option value="https://dev-api.bangyangjia.com" />
-              <option value="https://test-api.bangyangjia.com" />
               <option value="http://localhost:48080" />
             </datalist>
 
