@@ -45,3 +45,10 @@ next-env.d.ts
 
 # bs-web submodule (not part of this build)
 /bs-web/
+
+# Playwright MCP artifacts & temp screenshots
+/.playwright-mcp/
+/after-dark.png
+/after-light.png
+/playwright-report/
+/test-results/

@@ -361,14 +361,14 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
 // Simple helper to show Old -> New if different
 function DiffField({ original, target, isDiff, className }: { original: any, target: any, isDiff?: boolean, className?: string, label: string }) {
     if (!isDiff || target === undefined) {
-        return <span className={cn("text-slate-500", className)} title={String(original)}>{original || '-'}</span>;
+        return <span className={cn("text-muted-foreground", className)} title={String(original)}>{original || '-'}</span>;
     }
     return (
         <div className="flex flex-col items-start text-xs group cursor-help">
-            <span className={cn("text-amber-600 font-bold bg-amber-100 px-1 rounded", className)} title="New Value">
+            <span className={cn("text-amber-700 dark:text-amber-400 font-bold bg-amber-100 dark:bg-amber-950 px-1 rounded", className)} title="New Value">
                 {original || 'EMPTY'}
             </span>
-            <span className="text-[10px] text-slate-400 line-through mt-0.5" title="Current Value on Target">
+            <span className="text-[10px] text-muted-foreground line-through mt-0.5" title="Current Value on Target">
                 {target || 'EMPTY'}
             </span>
         </div>

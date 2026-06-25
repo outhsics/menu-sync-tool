@@ -265,17 +265,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
 
-      <nav className="sticky top-0 z-50 bg-slate-950 dark:bg-slate-950 px-6 py-4 shadow-sm border-b border-border/40">
+      <nav className="sticky top-0 z-50 bg-card dark:bg-slate-950/80 backdrop-blur-md px-6 py-4 shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <Zap className="text-primary-foreground w-6 h-6 fill-primary-foreground" />
             </div>
             <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+                <h1 className="text-xl font-bold text-card-foreground tracking-tight flex items-center gap-2">
                     MenuSync Pro <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-mono">v3.1 DIFF</span>
                 </h1>
-                <p className="text-[10px] text-muted-foreground font-mono">Next.js 15 + React 19 + Diff Engine</p>
+                <p className="text-xs text-muted-foreground font-mono">Next.js 16 + React 19 + Diff Engine</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -409,13 +409,13 @@ export default function Home() {
                 </CardContent>
             </Card>
 
-            <Card className="lg:col-span-4 bg-slate-950 border-border shadow-2xl overflow-hidden flex flex-col max-h-[850px] group">
-                <CardHeader className="bg-slate-900/50 p-4 border-b border-border/40">
-                    <CardTitle className="text-[10px] font-bold font-mono flex items-center gap-2 text-muted-foreground tracking-widest uppercase">
+            <Card className="lg:col-span-4 bg-card dark:bg-slate-950 border-border shadow-xl shadow-border/20 overflow-hidden flex flex-col max-h-[850px] group">
+                <CardHeader className="bg-muted/50 dark:bg-slate-900/50 p-4 border-b border-border">
+                    <CardTitle className="text-xs font-bold font-mono flex items-center gap-2 text-muted-foreground tracking-widest uppercase">
                         <Terminal className="w-3.5 h-3.5" /> SYNC_OPERATION_LOGS
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 font-mono text-[11px] leading-relaxed space-y-2 overflow-y-auto overflow-x-hidden">
+                <CardContent className="flex-1 p-4 font-mono text-xs leading-relaxed space-y-1.5 overflow-y-auto overflow-x-hidden">
                     <AnimatePresence>
                         {logs.length === 0 && <div className="text-muted-foreground text-center py-20 italic font-sans">等待操作指令...</div>}
                         {logs.map((log) => (
@@ -425,9 +425,9 @@ export default function Home() {
                                 animate={{ opacity: 1, x: 0 }}
                                 className={cn(
                                     "border-b border-border/40 pb-1.5 flex gap-2 transition-all",
-                                    log.type === 'error' ? "text-red-400 bg-red-400/5 px-1 rounded" :
-                                    log.type === 'success' ? "text-green-400 bg-green-400/5 px-1 rounded" :
-                                    log.type === 'warn' ? "text-amber-400" : "text-muted-foreground"
+                                    log.type === 'error' ? "text-red-600 dark:text-red-400 bg-red-500/5 px-1 rounded" :
+                                    log.type === 'success' ? "text-green-600 dark:text-green-400 bg-green-500/5 px-1 rounded" :
+                                    log.type === 'warn' ? "text-amber-600 dark:text-amber-400" : "text-foreground/80"
                                 )}
                             >
                                 <span className="text-muted-foreground shrink-0 font-medium">[{log.timestamp.toLocaleTimeString()}]</span>
