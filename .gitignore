@@ -52,3 +52,4 @@ next-env.d.ts
 /after-light.png
 /playwright-report/
 /test-results/
+__pycache__/

@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { MenuDiffTable } from '@/components/MenuDiffTable';
 import { LoginModal } from '@/components/LoginModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 // 日志条目接口
 interface LogEntry {
@@ -263,33 +264,39 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+    <div className="min-h-screen bg-background text-foreground font-sans">
 
-      <nav className="sticky top-0 z-50 bg-card dark:bg-slate-950/80 backdrop-blur-md px-6 py-4 shadow-sm border-b border-border">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Zap className="text-primary-foreground w-6 h-6 fill-primary-foreground" />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-700 flex items-center justify-center shadow-lg shadow-primary/25">
+              <Zap className="text-primary-foreground w-5 h-5 fill-primary-foreground" />
+              <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20" />
             </div>
-            <div>
-                <h1 className="text-xl font-bold text-card-foreground tracking-tight flex items-center gap-2">
-                    MenuSync Pro <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-mono">v3.1 DIFF</span>
+            <div className="flex flex-col">
+                <h1 className="text-base font-bold text-foreground tracking-tight leading-none flex items-center gap-2">
+                    MenuSync Pro
+                    <span className="bg-muted text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium border border-border">v3.1 DIFF</span>
                 </h1>
-                <p className="text-xs text-muted-foreground font-mono">Next.js 16 + React 19 + Diff Engine</p>
+                <p className="text-xs text-muted-foreground font-mono mt-1">Next.js 16 · React 19 · Diff Engine</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <LoginModal />
-            <Badge variant="outline" className="border-border bg-muted text-muted-foreground font-mono text-[10px]">RUNTIME: BUN 1.3.5</Badge>
+            <Badge variant="outline" className="hidden sm:inline-flex border-border bg-muted/60 text-muted-foreground font-mono text-[10px]">RUNTIME · BUN 1.3.5</Badge>
+            <ThemeToggle />
           </div>
         </div>
-      </nav>
+      </header>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-8 pb-20">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
-            <div className="bg-card border border-border p-2 rounded-full shadow-lg text-muted-foreground">
-                <ArrowRightLeft className="w-5 h-5" />
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pb-20">
+        {/* Environment Section */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-5 relative">
+          {/* Center connector */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:block">
+            <div className="bg-card border border-border p-2.5 rounded-full shadow-lg text-primary">
+                <ArrowRightLeft className="w-4 h-4" />
             </div>
           </div>
           <EnvironmentCard
@@ -306,59 +313,60 @@ export default function Home() {
           />
         </section>
 
-        {/* 全局操作栏 */}
+        {/* Primary CTA - Analyze */}
         <section className="flex justify-center">
              <Button
                 size="lg"
                 className={cn(
-                    "w-full max-w-md h-12 text-lg shadow-xl shadow-primary/20 transition-all cursor-pointer",
+                    "w-full max-w-md h-12 text-base font-semibold shadow-lg shadow-primary/20 transition-all cursor-pointer",
                     analyzing
-                        ? "bg-muted cursor-not-allowed text-muted-foreground"
-                        : "bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
+                        ? "bg-muted cursor-not-allowed text-muted-foreground shadow-none"
+                        : "bg-primary hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
                 )}
                 disabled={!source.isConnected || !target.isConnected || analyzing}
                 onClick={handleAnalyze}
              >
                 {analyzing ? (
                     <>
-                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                         正在分析差异...
                     </>
                 ) : (
                     <>
-                        <Search className="mr-2 h-5 w-5" />
-                        开始对比分析 (Diff Analysis)
+                        <Search className="mr-2 h-4 w-4" />
+                        开始对比分析
                     </>
                 )}
              </Button>
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-8 bg-card border-border shadow-xl shadow-border/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border">
-                    <div>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2 text-card-foreground">
-                            <ListTree className="text-primary w-5 h-5" /> 差异对比面板
+        {/* Diff + Logs */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <Card className="lg:col-span-8 bg-card border-border shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border">
+                    <div className="min-w-0">
+                        <CardTitle className="text-base font-bold flex items-center gap-2 text-card-foreground">
+                            <ListTree className="text-primary w-5 h-5 shrink-0" /> 差异对比面板
                             {diffTree.length > 0 && (
-                                <span className="ml-2 flex gap-2 text-xs font-normal">
-                                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:text-green-400 dark:border-green-800">+{stats.added} 新增</Badge>
-                                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">~{stats.updated} 变更</Badge>
+                                <span className="ml-1 flex gap-1.5 text-xs font-normal">
+                                    <Badge variant="outline" className="text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/50">+{stats.added} 新增</Badge>
+                                    <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50">~{stats.updated} 变更</Badge>
                                 </span>
                             )}
                         </CardTitle>
-                        <CardDescription className="text-muted-foreground">对比结果预览，请勾选需要同步的项目</CardDescription>
+                        <CardDescription className="text-muted-foreground mt-1">对比结果预览，请勾选需要同步的项目</CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                    {/* 系统选择器 */}
+                <CardContent className="space-y-5 p-5">
+                    {/* System selector */}
                      <div className="relative">
                         <select
-                            className="w-full h-10 pl-4 pr-4 bg-muted/50 border border-border rounded-lg text-sm text-foreground outline-none focus:ring-2 ring-primary/20 focus:border-primary appearance-none disabled:opacity-50 transition-all cursor-pointer hover:border-primary/60"
+                            className="w-full h-10 pl-4 pr-10 bg-muted/40 border border-border rounded-lg text-sm text-foreground outline-none focus:ring-2 ring-primary/20 focus:border-primary appearance-none disabled:opacity-50 transition-all cursor-pointer hover:border-primary/60"
                             value={selectedSystem}
                             disabled={diffTree.length === 0}
                             onChange={(e) => {
                                 setSelectedSystem(e.target.value);
-                                setSelectedMenus(new Set()); // 切换系统时清空选择
+                                setSelectedMenus(new Set());
                             }}
                         >
                             <option value="">{diffTree.length === 0 ? "请先执行分析..." : "选择需要同步的系统模块..."}</option>
@@ -368,12 +376,13 @@ export default function Home() {
                                 </option>
                             ))}
                         </select>
+                        <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                     </div>
 
-                    <div className="min-h-[400px] bg-muted/30 p-4 border border-border rounded-xl">
+                    <div className="min-h-[400px] p-4 border border-border rounded-xl bg-muted/20">
                         {selectedSystem ? (
                             <MenuDiffTable
-                                data={diffTree.find(m => m.name === selectedSystem)?.children || []} // 显示选中系统的子节点
+                                data={diffTree.find(m => m.name === selectedSystem)?.children || []}
                                 selectedMenus={selectedMenus}
                                 onToggle={toggleMenu}
                                 onToggleWithChildren={toggleMenuWithChildren}
@@ -381,27 +390,29 @@ export default function Home() {
                                 disabled={syncing}
                             />
                         ) : (
-                            <div className="h-[360px] flex flex-col items-center justify-center text-muted-foreground space-y-3 opacity-60">
-                                <Search className="w-12 h-12 stroke-[1]" />
+                            <div className="h-[360px] flex flex-col items-center justify-center text-muted-foreground space-y-3">
+                                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                                    <Search className="w-7 h-7 stroke-[1.5] opacity-60" />
+                                </div>
                                 <p className="text-sm font-medium">请先执行分析，并选择一个系统以查看差异</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4 gap-4 items-center border-t border-border">
-                         <div className="text-xs text-muted-foreground">
-                            已选择 {selectedMenus.size} 个同步项
+                    <div className="flex justify-end pt-1 gap-4 items-center border-t border-border">
+                         <div className="text-xs text-muted-foreground mr-auto">
+                            已选择 <span className="font-semibold text-foreground">{selectedMenus.size}</span> 个同步项
                          </div>
                         <Button
                             size="lg"
-                            className="w-full md:w-auto min-w-[200px] bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-500 shadow-lg shadow-primary/30 border-0 py-6 text-base font-bold transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                            className="min-w-[200px] bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 shadow-lg shadow-primary/30 border-0 h-11 text-sm font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                             disabled={!selectedSystem || selectedMenus.size === 0 || syncing}
                             onClick={handleSync}
                         >
                             {syncing ? (
-                                <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
                             ) : (
-                                <Zap className="w-5 h-5 mr-2 fill-current" />
+                                <Zap className="w-4 h-4 mr-2 fill-current" />
                             )}
                             {syncing ? '正在同步...' : '执行选中同步'}
                         </Button>
@@ -409,28 +420,33 @@ export default function Home() {
                 </CardContent>
             </Card>
 
-            <Card className="lg:col-span-4 bg-card dark:bg-slate-950 border-border shadow-xl shadow-border/20 overflow-hidden flex flex-col max-h-[850px] group">
-                <CardHeader className="bg-muted/50 dark:bg-slate-900/50 p-4 border-b border-border">
+            {/* Log console */}
+            <Card className="lg:col-span-4 bg-card border-border shadow-md overflow-hidden flex flex-col max-h-[850px] group">
+                <CardHeader className="bg-muted/40 p-4 border-b border-border flex-row justify-between items-center space-y-0">
                     <CardTitle className="text-xs font-bold font-mono flex items-center gap-2 text-muted-foreground tracking-widest uppercase">
                         <Terminal className="w-3.5 h-3.5" /> SYNC_OPERATION_LOGS
                     </CardTitle>
+                    <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                        <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" /></span>
+                        LIVE
+                    </span>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 font-mono text-xs leading-relaxed space-y-1.5 overflow-y-auto overflow-x-hidden">
-                    <AnimatePresence>
-                        {logs.length === 0 && <div className="text-muted-foreground text-center py-20 italic font-sans">等待操作指令...</div>}
+                <CardContent className="flex-1 p-3 font-mono text-xs leading-relaxed space-y-1 overflow-y-auto overflow-x-hidden">
+                    <AnimatePresence initial={false}>
+                        {logs.length === 0 && <div className="text-muted-foreground/60 text-center py-20 italic font-sans text-[13px]">等待操作指令...</div>}
                         {logs.map((log) => (
                             <motion.div
                                 key={log.id}
-                                initial={{ opacity: 0, x: -10 }}
+                                initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className={cn(
-                                    "border-b border-border/40 pb-1.5 flex gap-2 transition-all",
-                                    log.type === 'error' ? "text-red-600 dark:text-red-400 bg-red-500/5 px-1 rounded" :
-                                    log.type === 'success' ? "text-green-600 dark:text-green-400 bg-green-500/5 px-1 rounded" :
-                                    log.type === 'warn' ? "text-amber-600 dark:text-amber-400" : "text-foreground/80"
+                                    "flex gap-2 transition-all py-0.5",
+                                    log.type === 'error' ? "text-red-600 dark:text-red-400" :
+                                    log.type === 'success' ? "text-green-600 dark:text-green-400" :
+                                    log.type === 'warn' ? "text-amber-600 dark:text-amber-400" : "text-foreground/75"
                                 )}
                             >
-                                <span className="text-muted-foreground shrink-0 font-medium">[{log.timestamp.toLocaleTimeString()}]</span>
+                                <span className="text-muted-foreground/70 shrink-0 select-none">{log.timestamp.toLocaleTimeString()}</span>
                                 <span className="flex-1 break-all">{log.message}</span>
                             </motion.div>
                         ))}

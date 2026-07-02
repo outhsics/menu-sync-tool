@@ -179,11 +179,11 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
             </div>
         </div>
 
-        <div className="border rounded-md border-border bg-card overflow-hidden shadow-sm">
+        <div className="border rounded-lg border-border bg-card overflow-hidden">
             <Table>
-                <TableHeader className="bg-muted/50">
-                    <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="w-[40px] text-center px-0">
+                <TableHeader>
+                    <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                        <TableHead className="w-[40px] text-center px-0 h-10">
                             <Checkbox
                                 checked={visibleRows.length > 0 && visibleRows.every(d => selectedMenus.has(d.id))}
                                 onCheckedChange={(checked) => {
@@ -199,12 +199,12 @@ export function MenuDiffTable({ data, selectedMenus, onToggle, onToggleWithChild
                                 className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                             />
                         </TableHead>
-                        <TableHead className="w-[80px] text-center text-card-foreground">状态</TableHead>
-                        <TableHead className="min-w-[250px] text-card-foreground">菜单名称</TableHead>
-                        <TableHead className="w-[50px] text-center text-card-foreground">图标</TableHead>
-                        <TableHead className="w-[50px] text-center text-card-foreground">排序</TableHead>
-                        <TableHead className="text-card-foreground">权限标识</TableHead>
-                        <TableHead className="text-card-foreground">组件路径</TableHead>
+                        <TableHead className="w-[80px] text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">状态</TableHead>
+                        <TableHead className="min-w-[250px] text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">菜单名称</TableHead>
+                        <TableHead className="w-[50px] text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">图标</TableHead>
+                        <TableHead className="w-[50px] text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">排序</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">权限标识</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">组件路径</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

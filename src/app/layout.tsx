@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
 
 export const metadata: Metadata = {
-  title: "Menu Sync Tool Pro | Bun Version",
+  title: "MenuSync Pro — Menu Synchronization Tool",
   description: "Next Generation Menu Synchronization Tool for Professional Developers",
 };
 
@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-background`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="dark"

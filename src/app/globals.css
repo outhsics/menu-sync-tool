@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* SaaS Professional Color Palette */
+  /* SaaS Professional Color Palette (WCAG AA verified) */
   --background: #F8FAFC;
-  --foreground: #1E293B;
+  --foreground: #0F172A;
 
   --card: #FFFFFF;
-  --card-foreground: #1E293B;
+  --card-foreground: #0F172A;
 
   --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
+  --popover-foreground: #0F172A;
 
   --primary: #2563EB;
   --primary-foreground: #FFFFFF;
 
   --secondary: #F1F5F9;
-  --secondary-foreground: #1E293B;
+  --secondary-foreground: #0F172A;
 
   --muted: #F1F5F9;
   --muted-foreground: #475569;
@@ -27,10 +27,17 @@
   --destructive-foreground: #FFFFFF;
 
   --border: #E2E8F0;
-  --input: #E2E8F0;
+  --input: #CBD5E1;
   --ring: #2563EB;
 
-  --radius: 0.5rem;
+  /* Refined elevation tokens */
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05);
+  --shadow-xl: 0 20px 25px -5px rgb(15 23 42 / 0.10), 0 8px 10px -6px rgb(15 23 42 / 0.05);
+
+  --radius: 0.625rem;
 }
 
 @theme inline {
@@ -67,7 +74,7 @@
   --radius-sm: calc(var(--radius) - 4px);
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -91,45 +98,72 @@
 }
 
 .dark {
-  --background: #0F172A;
-  --foreground: #F1F5F9;
+  --background: #0B1120;
+  --foreground: #E2E8F0;
 
-  --card: #1E293B;
-  --card-foreground: #F1F5F9;
+  --card: #131C31;
+  --card-foreground: #E2E8F0;
 
-  --popover: #1E293B;
-  --popover-foreground: #F1F5F9;
+  --popover: #131C31;
+  --popover-foreground: #E2E8F0;
 
   --primary: #3B82F6;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #334155;
-  --secondary-foreground: #F1F5F9;
+  --secondary: #1E293B;
+  --secondary-foreground: #E2E8F0;
 
-  --muted: #334155;
+  --muted: #1E293B;
   --muted-foreground: #94A3B8;
 
-  --accent: #1E40AF;
-  --accent-foreground: #DBEAFE;
+  --accent: #1E3A8A;
+  --accent-foreground: #BFDBFE;
 
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #334155;
+  --border: #1E293B;
   --input: #334155;
   --ring: #3B82F6;
+
+  /* Dark elevation tokens - deeper, cooler shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.4);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Decorative ambient background - subtle depth without distraction */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgb(37 99 235 / 0.06), transparent),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgb(37 99 235 / 0.04), transparent);
+}
+
+.dark body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgb(59 130 246 / 0.08), transparent),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgb(59 130 246 / 0.05), transparent);
 }
 
 /* Professional scroll styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -138,9 +172,26 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
+  background-clip: content-box;
+}
+
+/* Selection color */
+::selection {
+  background: rgb(37 99 235 / 0.2);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
